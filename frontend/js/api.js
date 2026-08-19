@@ -1,14 +1,14 @@
 /**
  * api.js - GenLayer Intellex Protocol API Client & Cloud Storage Sync
  * Enables real-time cross-device sync for authentic Client-created bounties only!
+ * Cloud Engine: Global Restful REST API Storage (Zero Auth Wall)
  */
 
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
-// Cloud Sync Endpoint (v7 fresh clean store for live client bounties)
-const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v7/escrows";
-const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v7/markets";
+// Live Global Cloud REST API Storage Endpoint
+const CLOUD_STORAGE_OBJECT_URL = "https://api.restful-api.dev/objects/ff8081819ff5b11001a01b1c2f1f53f7";
 
 // Strict legacy demo filter (ONLY purges exact original demo IDs, never user bounties)
 function cleanEscrowsArray(arr) {
@@ -43,11 +43,11 @@ function saveLocalEscrows(escrows) {
 // Cloud Storage Sync Helpers
 async function fetchCloudEscrows() {
   try {
-    const response = await fetch(CLOUD_SYNC_ESCROWS_URL, { cache: 'no-store' });
+    const response = await fetch(CLOUD_STORAGE_OBJECT_URL, { cache: 'no-store' });
     if (response.ok) {
-      const text = await response.text();
-      if (text && text.trim().startsWith('[')) {
-        let parsed = JSON.parse(text);
+      const json = await response.json();
+      if (json && json.data && Array.isArray(json.data.escrows)) {
+        let parsed = json.data.escrows;
         parsed = cleanEscrowsArray(parsed);
         saveLocalEscrows(parsed);
         return parsed;
@@ -63,10 +63,13 @@ async function syncCloudEscrows(escrows) {
   const cleaned = cleanEscrowsArray(escrows);
   saveLocalEscrows(cleaned);
   try {
-    await fetch(CLOUD_SYNC_ESCROWS_URL, {
-      method: 'POST',
+    await fetch(CLOUD_STORAGE_OBJECT_URL, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleaned)
+      body: JSON.stringify({
+        name: "intellex_escrows",
+        data: { escrows: cleaned }
+      })
     });
   } catch (e) {
     console.warn("Cloud sync push error:", e);
