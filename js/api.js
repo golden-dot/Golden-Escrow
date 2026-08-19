@@ -1,16 +1,26 @@
 /**
- * api.js - GenLayer Intellex Protocol API Client & Cloud Storage Sync
- * Enables real-time cross-device sync for authentic Client-created bounties only!
- * Cloud Engine: Global Restful REST API Storage (Zero Auth Wall)
+ * api.js - GenLayer Intellex Protocol API Client & Persistence Engine
+ * Enables real-time sync for authentic Client-created bounties (Unlimited bounties per client)
  */
 
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
-// Live Global Cloud REST API Storage Endpoint
-const CLOUD_STORAGE_OBJECT_URL = "https://api.restful-api.dev/objects/ff8081819ff5b11001a01b1c2f1f53f7";
+// BroadcastChannel for instant real-time cross-tab synchronization
+let broadcastChannel = null;
+try {
+  if (typeof BroadcastChannel !== 'undefined') {
+    broadcastChannel = new BroadcastChannel('intellex_global_sync');
+    broadcastChannel.onmessage = (event) => {
+      if (event.data && event.data.type === 'ESCROWS_UPDATED') {
+        if (window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('intellex:escrows_updated', { detail: event.data.escrows }));
+        }
+      }
+    };
+  }
+} catch (e) {}
 
-// Strict legacy demo filter (ONLY purges exact original demo IDs, never user bounties)
 function cleanEscrowsArray(arr) {
   if (!Array.isArray(arr)) return [];
   return arr.filter(e => {
@@ -38,42 +48,42 @@ function getLocalEscrows() {
 function saveLocalEscrows(escrows) {
   const cleaned = cleanEscrowsArray(escrows);
   localStorage.setItem('intellex_global_escrows', JSON.stringify(cleaned));
+  if (broadcastChannel) {
+    try {
+      broadcastChannel.postMessage({ type: 'ESCROWS_UPDATED', escrows: cleaned });
+    } catch (e) {}
+  }
 }
 
-// Cloud Storage Sync Helpers
-async function fetchCloudEscrows() {
+// Fetch escrows from server endpoint or fallback to local storage
+async function fetchEscrowsData() {
+  const origin = window.location.origin.includes('localhost') ? 'http://localhost:8000' : '';
   try {
-    const response = await fetch(CLOUD_STORAGE_OBJECT_URL, { cache: 'no-store' });
-    if (response.ok) {
-      const json = await response.json();
-      if (json && json.data && Array.isArray(json.data.escrows)) {
-        let parsed = json.data.escrows;
-        parsed = cleanEscrowsArray(parsed);
-        saveLocalEscrows(parsed);
-        return parsed;
+    const res = await fetch(`${origin}/api/escrows`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        let cleaned = cleanEscrowsArray(data);
+        saveLocalEscrows(cleaned);
+        return cleaned;
       }
     }
-  } catch (e) {
-    console.warn("Cloud sync fetch fallback to local storage:", e);
-  }
+  } catch (e) {}
   return getLocalEscrows();
 }
 
-async function syncCloudEscrows(escrows) {
+// Push escrows to server endpoint & local storage
+async function syncEscrowsData(escrows) {
   const cleaned = cleanEscrowsArray(escrows);
   saveLocalEscrows(cleaned);
+  const origin = window.location.origin.includes('localhost') ? 'http://localhost:8000' : '';
   try {
-    await fetch(CLOUD_STORAGE_OBJECT_URL, {
-      method: 'PUT',
+    await fetch(`${origin}/api/escrows/sync`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: "intellex_escrows",
-        data: { escrows: cleaned }
-      })
+      body: JSON.stringify(cleaned)
     });
-  } catch (e) {
-    console.warn("Cloud sync push error:", e);
-  }
+  } catch (e) {}
 }
 
 class APIClient {
@@ -103,13 +113,14 @@ class APIClient {
   }
 
   async getEscrows() {
-    return await fetchCloudEscrows();
+    return await fetchEscrowsData();
   }
 
-  // Create Escrow in AWAITING_DEPOSIT state
+  // Create Escrow in AWAITING_DEPOSIT state (No limit on number of escrows created per client!)
   async createEscrow(data) {
-    const escrows = await fetchCloudEscrows();
-    const newId = escrows.length + 1;
+    const escrows = await fetchEscrowsData();
+    const maxId = escrows.reduce((max, e) => Math.max(max, parseInt(e.escrow_id || e.id || 0)), 0);
+    const newId = maxId + 1;
     const newEscrow = {
       escrow_id: newId,
       client: data.client || "Client",
@@ -131,77 +142,77 @@ class APIClient {
       createdAt: new Date().toISOString()
     };
     escrows.push(newEscrow);
-    await syncCloudEscrows(escrows);
+    await syncEscrowsData(escrows);
     return { success: true, escrow_id: newId, escrow: newEscrow };
   }
 
   // Confirm Deposit Payment & Publicize Bounty to All Builders Worldwide
   async confirmEscrowDeposit(escrowId) {
-    const escrows = await fetchCloudEscrows();
+    const escrows = await fetchEscrowsData();
     const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (target) {
       target.payment_received = true;
       target.status = "OPEN_FOR_CLAIM";
       target.contractor = "0x0000000000000000000000000000000000000000";
-      await syncCloudEscrows(escrows);
+      await syncEscrowsData(escrows);
       return { success: true, message: `Payment verified! Escrow Bounty #${escrowId} is now publicized to all Builders.`, escrow: target };
     }
     throw new Error(`Escrow Bounty #${escrowId} not found`);
   }
 
   async deleteEscrow(escrowId) {
-    let escrows = await fetchCloudEscrows();
+    let escrows = await fetchEscrowsData();
     escrows = escrows.filter(e => (e.escrow_id || e.id) != escrowId);
-    await syncCloudEscrows(escrows);
+    await syncEscrowsData(escrows);
     return { success: true, message: `Escrow Bounty #${escrowId} deleted` };
   }
 
   async joinEscrow(data) {
-    const escrows = await fetchCloudEscrows();
+    const escrows = await fetchEscrowsData();
     const target = escrows.find(e => (e.escrow_id || e.id) == data.escrow_id);
     if (target) {
       target.contractor = data.participant_address || "Builder";
       target.status = "ACTIVE";
-      await syncCloudEscrows(escrows);
+      await syncEscrowsData(escrows);
     }
     return { success: true, message: "Claimed bounty as contractor" };
   }
 
   // ALLOW BUILDER TO CANCEL CLAIMED BOUNTY & RETURN TO OPEN MARKETPLACE
   async cancelClaimedBounty(escrowId) {
-    const escrows = await fetchCloudEscrows();
+    const escrows = await fetchEscrowsData();
     const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (target) {
       target.contractor = "0x0000000000000000000000000000000000000000";
       target.deliverable_url = "";
       target.deliverable_notes = "";
       target.status = "OPEN_FOR_CLAIM";
-      await syncCloudEscrows(escrows);
+      await syncEscrowsData(escrows);
       return { success: true, message: `Bounty #${escrowId} claim cancelled and returned to Open Marketplace` };
     }
     throw new Error(`Escrow #${escrowId} not found`);
   }
 
   async submitDeliverable(data) {
-    const escrows = await fetchCloudEscrows();
+    const escrows = await fetchEscrowsData();
     const target = escrows.find(e => (e.escrow_id || e.id) == data.escrow_id);
     if (target) {
       target.deliverable_url = data.deliverable_url;
       target.deliverable_notes = data.deliverable_notes;
       target.status = "SUBMITTED";
-      await syncCloudEscrows(escrows);
+      await syncEscrowsData(escrows);
     }
     return { success: true, message: "Deliverable submitted" };
   }
 
   async resolveMilestone(escrowId) {
-    const escrows = await fetchCloudEscrows();
+    const escrows = await fetchEscrowsData();
     const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (target) {
       target.decision = "ACCEPT";
       target.score = 92;
       target.status = "VERIFIED_AWAITING_PAYOUT_ADDRESS";
-      await syncCloudEscrows(escrows);
+      await syncEscrowsData(escrows);
     }
     return {
       success: true,
@@ -219,12 +230,12 @@ class APIClient {
   }
 
   async releasePayout(escrowId, destinationAddress) {
-    const escrows = await fetchCloudEscrows();
+    const escrows = await fetchEscrowsData();
     const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (target) {
       target.payout_address = destinationAddress;
       target.status = "ACCEPTED";
-      await syncCloudEscrows(escrows);
+      await syncEscrowsData(escrows);
     }
     return {
       success: true,

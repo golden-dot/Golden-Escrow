@@ -6,8 +6,9 @@ Network: GenLayer Bradbury
 import os
 import sys
 import time
+import json
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -43,6 +44,21 @@ runtime = GenLayerRuntime()
 escrow_contract = IntelligentEscrow()
 oracle_contract = TruthForgeOracle()
 
+ESCROWS_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "escrows_db.json"))
+
+def load_escrows_from_file():
+    if os.path.exists(ESCROWS_FILE):
+        try:
+            with open(ESCROWS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+def save_escrows_to_file(data):
+    with open(ESCROWS_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
 # -------------------------------------------------------------
 # REST Endpoints
 # -------------------------------------------------------------
@@ -62,7 +78,12 @@ def get_node_status():
 
 @app.get("/api/escrows")
 def get_all_escrows():
-    return [escrow_contract.get_escrow(i) for i in range(1, int(escrow_contract.next_escrow_id))]
+    return load_escrows_from_file()
+
+@app.post("/api/escrows/sync")
+def sync_all_escrows(data: list = Body(...)):
+    save_escrows_to_file(data)
+    return {"status": "success", "count": len(data)}
 
 @app.get("/api/markets")
 def get_all_markets():

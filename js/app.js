@@ -464,6 +464,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Listen for BroadcastChannel updates
+  window.addEventListener('intellex:escrows_updated', (e) => {
+    if (e.detail && Array.isArray(e.detail)) {
+      state.escrows = e.detail;
+      renderEscrows();
+    }
+  });
+
   window.deleteEscrowTask = async (escrowId) => {
     if (confirm(`Are you sure you want to delete Escrow Bounty #${escrowId}?`)) {
       try {
@@ -566,7 +574,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return escrow.status === 'ACCEPTED' || escrow.status === 'COMPLETED';
       }
 
-      // 'all' FILTER: SHOW ALL PUBLICIZED BOUNTIES (AND UNPAID BOUNTIES FOR CREATOR)
       return true;
     });
 
@@ -1209,12 +1216,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Live polling for cross-device updates every 4 seconds
+  // Live polling for cross-device updates every 3 seconds
   setInterval(() => {
     if (state.currentScreen === 'dashboard') {
       loadEscrows();
     }
-  }, 4000);
+  }, 3000);
 
   // INITIALIZE SESSION RESTORATION ON PAGE REFRESH
   loadNodeStatus();
