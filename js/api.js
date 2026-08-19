@@ -6,12 +6,65 @@
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
+const DEFAULT_ESCROWS = [
+  {
+    escrow_id: 1,
+    client: "0xAliceClient",
+    contractor: "0x0000000000000000000000000000000000000000",
+    title: "GenLayer Bradbury DEX Router Security Audit",
+    description: "Comprehensive security assessment, GenVM non-deterministic invariant testing, and mathematical formal verification.",
+    category: "Smart Contract Security",
+    requirements: "Develop automated fuzz tests for non-deterministic web and prompt handlers on GenLayer Bradbury.",
+    criteria: "Zero reentrancy or state mismatch during validator equivalence. Fuzz suite covers > 10,000 synthetic transaction edge-cases.",
+    amount: 1200,
+    quality_threshold: 85,
+    deliverable_url: "",
+    deliverable_notes: "",
+    status: "OPEN_FOR_CLAIM",
+    decision: "",
+    score: 0,
+    payment_received: true,
+    payout_address: "",
+    createdAt: new Date().toISOString()
+  },
+  {
+    escrow_id: 2,
+    client: "0xDevinClient",
+    contractor: "0x0000000000000000000000000000000000000000",
+    title: "GenLayer Python SDK Async WebSocket Listener Bounty",
+    description: "Open Community Bounty: Build high-throughput async WebSocket event subscription wrapper for GenLayer Bradbury nodes with automatic reconnects.",
+    category: "SDK & Developer Tooling",
+    requirements: "Deliver modular Python package with 90%+ pytest coverage and typing annotations.",
+    criteria: "Fully async using asyncio and websockets. Pytest suite passing with 90%+ code coverage.",
+    amount: 950,
+    quality_threshold: 85,
+    deliverable_url: "",
+    deliverable_notes: "",
+    status: "OPEN_FOR_CLAIM",
+    decision: "",
+    score: 0,
+    payment_received: true,
+    payout_address: "",
+    createdAt: new Date().toISOString()
+  }
+];
+
 // Load or Initialize Global Storage across all user sessions
 function getGlobalEscrows() {
   try {
-    return JSON.parse(localStorage.getItem('intellex_global_escrows')) || [];
+    const data = localStorage.getItem('intellex_global_escrows');
+    if (!data) {
+      localStorage.setItem('intellex_global_escrows', JSON.stringify(DEFAULT_ESCROWS));
+      return DEFAULT_ESCROWS;
+    }
+    const parsed = JSON.parse(data);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      localStorage.setItem('intellex_global_escrows', JSON.stringify(DEFAULT_ESCROWS));
+      return DEFAULT_ESCROWS;
+    }
+    return parsed;
   } catch (e) {
-    return [];
+    return DEFAULT_ESCROWS;
   }
 }
 

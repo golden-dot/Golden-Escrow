@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ESCROW_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ESCROW_CONTRACT}`;
   const ORACLE_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ORACLE_CONTRACT}`;
 
-  // Registered Accounts Repository (Stores Permanent Roles per User)
+  // Registered Accounts Repository
   let registeredAccounts = [];
   try {
     registeredAccounts = JSON.parse(localStorage.getItem('intellex_registered_accounts')) || [];
@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Load & Render Escrows (BUILDERS SEE ALL BOUNTIES; CLIENTS CAN MANUALLY DELETE OWN BOUNTIES)
+  // Load & Render Escrows
   async function loadEscrows() {
     try {
       const escrows = await API.getEscrows();
@@ -503,16 +503,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!matchesSearch) return false;
 
-      // CLIENT ROLE ONLY SEES BOUNTIES CREATED BY HIMSELF UNLESS FILTER IS 'ALL'
+      // CLIENT ROLE: IN 'ALL' FILTER, CLIENT SEES HIS OWN CREATED TASKS
       if (isClient && state.activeFilter === 'all') {
         const clientOwnerLower = (escrow.client || '').toLowerCase();
         return (clientOwnerLower === currentUser || clientOwnerLower === currentEmail);
       }
 
-      if (state.activeFilter === 'open') {
-        // BUILDERS SEE ALL OPEN BOUNTIES CREATED BY ANY CLIENT
+      // BUILDER ROLE OR 'OPEN' FILTER: SHOW ALL OPEN COMMUNITY BOUNTIES
+      if (state.activeFilter === 'open' || (isBuilder && state.activeFilter === 'all')) {
         return escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'));
-      } else if (state.activeFilter === 'my-jobs') {
+      }
+
+      if (state.activeFilter === 'my-jobs') {
         return (escrow.client && (escrow.client.toLowerCase() === currentUser || escrow.client.toLowerCase() === currentEmail)) || 
                (escrow.contractor && (escrow.contractor.toLowerCase() === currentUser || escrow.contractor.toLowerCase() === currentEmail));
       } else if (state.activeFilter === 'completed') {
