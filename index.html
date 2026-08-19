@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GenLayer Intellex Protocol | Autonomous AI Escrow & Truth Oracle</title>
-  <meta name="description" content="Decentralized Intelligent Escrow Bounties and Multi-Source Truth Oracle powered by GenLayer GenVM and Optimistic Democracy on GenLayer Bradbury Network.">
+  <title>Golden Escrow | Intelligent Escrow Infrastructure & AI Verification</title>
+  <meta name="description" content="Decentralized Intelligent Escrow Infrastructure powered by GenLayer GenVM autonomous AI reasoning and committee validator consensus on GenLayer Bradbury.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- SCREEN 1: INITIAL LOGIN & SIGN UP PAGE -->
+  <!-- SCREEN 1: LOGIN & AUTH -->
   <div class="app-screen active" id="login-screen">
     <div class="auth-container">
       <div class="auth-card">
@@ -22,112 +22,81 @@
             </svg>
           </div>
           <div class="brand-text">
-            <h1>INTELLEX</h1>
+            <h1>GOLDEN ESCROW</h1>
             <span>GenLayer Bradbury</span>
           </div>
         </div>
 
-        <!-- Auth Navigation Tabs -->
         <div class="auth-tabs">
           <button class="auth-tab-btn active" id="auth-tab-login" onclick="window.switchAuthTab('login')">Log In</button>
           <button class="auth-tab-btn" id="auth-tab-signup" onclick="window.switchAuthTab('signup')">Create Account</button>
         </div>
 
-        <!-- FORM 1: LOG IN TO EXISTING ACCOUNT -->
         <form id="auth-login-form">
           <div class="form-group">
             <label class="form-label">Email or Username</label>
-            <input type="text" class="form-control" id="login-identifier" placeholder="Enter your email or username" required>
+            <input type="text" class="form-control" id="login-identifier" placeholder="Enter email or username" required>
           </div>
-
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" class="form-control" id="login-password" placeholder="Enter your password" required>
+            <input type="password" class="form-control" id="login-password" placeholder="Enter password" required>
           </div>
-
-          <button type="submit" class="action-btn" id="login-submit-btn" style="width:100%;margin-top:1.25rem;padding:12px;font-size:0.95rem;">
+          <button type="submit" class="action-btn" id="login-submit-btn" style="width:100%;margin-top:1.25rem;">
             Sign In &amp; Continue
           </button>
         </form>
 
-        <!-- FORM 2: CREATE NEW ACCOUNT -->
         <form id="auth-signup-form" style="display:none;">
           <div class="form-group">
             <label class="form-label">Full Name</label>
-            <input type="text" class="form-control" id="signup-fullname" placeholder="Enter your full name" required>
+            <input type="text" class="form-control" id="signup-fullname" placeholder="Full Name" required>
           </div>
-
           <div class="form-group">
             <label class="form-label">Email Address</label>
             <input type="email" class="form-control" id="signup-email" placeholder="name@domain.com" required>
           </div>
-
           <div class="form-group">
             <label class="form-label">Choose Password</label>
-            <input type="password" class="form-control" id="signup-password" placeholder="Create a password" required>
+            <input type="password" class="form-control" id="signup-password" placeholder="Password" required>
           </div>
-
-          <button type="submit" class="action-btn" id="signup-submit-btn" style="width:100%;margin-top:1.25rem;padding:12px;font-size:0.95rem;">
-            Create New Account
+          <button type="submit" class="action-btn" id="signup-submit-btn" style="width:100%;margin-top:1.25rem;">
+            Create Account
           </button>
         </form>
-
-        <div style="margin-top:1.5rem;text-align:center;font-size:0.8rem;color:var(--text-dim);">
-          Enter your credentials to Log In or Create a New Account.
-        </div>
       </div>
     </div>
   </div>
 
-  <!-- SCREEN 2: INITIAL PERMANENT ROLE SELECTION PAGE -->
+  <!-- SCREEN 2: ROLE SELECTION -->
   <div class="app-screen" id="role-selection-screen">
     <div class="role-screen-container">
       <div class="role-header">
         <h2>Choose Your Account Role</h2>
-        <p style="color:var(--warning);font-weight:600;margin-top:4px;">
-          Note: This role will be permanently locked to your account to preserve protocol integrity.
-        </p>
+        <p>Operating on GenLayer Bradbury with autonomous AI verification.</p>
       </div>
 
       <div class="role-grid">
-        <!-- Option A: Builder / Contractor -->
         <div class="role-card-option selected" id="role-card-builder" data-role="builder">
           <span class="role-tag-badge">BUILDER / CONTRACTOR</span>
           <h3>Builder Account</h3>
-          <p>Browse open community escrow bounties, claim tasks created by clients, submit deliverable PRs, verify work via AI, and receive payment payouts.</p>
+          <p>Browse open community escrow bounties, claim tasks, submit deliverable evidence, and receive verified payouts.</p>
         </div>
 
-        <!-- Option B: Client / Buyer -->
         <div class="role-card-option" id="role-card-client" data-role="client">
           <span class="role-tag-badge">CLIENT / BUYER</span>
           <h3>Client Account</h3>
-          <p>Deploy escrow bounty vaults, deposit funds into the smart contract to publicize bounties globally, and review AI verification reports.</p>
-        </div>
-
-        <!-- Option C: DAO Arbiter -->
-        <div class="role-card-option" id="role-card-dao" data-role="dao">
-          <span class="role-tag-badge">DAO ARBITER</span>
-          <h3>DAO Governance Account</h3>
-          <p>Stake GEN tokens in committee validator pools, monitor equivalence consensus, and govern protocol dispute reserves.</p>
-        </div>
-
-        <!-- Option D: Oracle Predictor -->
-        <div class="role-card-option" id="role-card-predictor" data-role="predictor">
-          <span class="role-tag-badge">ORACLE PREDICTOR</span>
-          <h3>Truth Oracle Account</h3>
-          <p>Stake on real-world factual claims verified by automated multi-source web crawlers and GenLayer consensus.</p>
+          <p>Deploy escrow bounty vaults, deposit funds on-chain, define acceptance criteria, and review AI verification reports.</p>
         </div>
       </div>
 
-      <button class="action-btn" id="confirm-role-btn" style="padding:14px 40px;font-size:1rem;min-width:280px;">
-        Lock Role &amp; Launch Dashboard
+      <button class="action-btn" id="confirm-role-btn" style="padding:14px 40px;font-size:1rem;">
+        Launch Infrastructure Dashboard
       </button>
     </div>
   </div>
 
   <!-- SCREEN 3: MAIN ESCROW PLATFORM DASHBOARD -->
   <div class="app-screen" id="dashboard-screen">
-    <!-- Navbar (Optimized for Mobile & Desktop with Modern Web3 Wallet Extension Integration) -->
     <header class="navbar">
       <div class="navbar-header-top">
         <a href="#" class="brand">
@@ -137,45 +106,32 @@
             </svg>
           </div>
           <div class="brand-text">
-            <h1>INTELLEX</h1>
-            <span>GenLayer Bradbury</span>
+            <h1>GOLDEN ESCROW</h1>
+            <span>Intellex Infrastructure</span>
           </div>
         </a>
-
-        <div class="header-mobile-right">
-          <!-- Web3 Wallet Connection Button (Modern Pill Badge) -->
-          <button class="action-btn btn-sm" id="connect-wallet-btn" onclick="window.openConnectWalletModal()" style="gap:6px;">
-            <span id="wallet-btn-icon">⚡</span>
-            <span id="wallet-btn-text">Connect Wallet</span>
-          </button>
-
-          <div class="user-profile-badge" id="nav-profile-badge">
-            <div>
-              <div id="nav-user-name" style="font-size:0.82rem;font-weight:700;line-height:1.2;">User</div>
-              <div class="role-pill" id="nav-user-role">CLIENT</div>
-            </div>
-          </div>
-
-          <button class="secondary-btn btn-sm" id="logout-btn" style="padding:6px 12px;font-size:0.8rem;border-color:var(--border-subtle);">
-            Log Out
-          </button>
-        </div>
       </div>
 
-      <!-- Navigation Tabs -->
       <nav class="nav-links">
         <button class="nav-tab active" data-tab="escrows" id="nav-tab-escrows">
-          Intelligent Escrow Bounties
+          Intelligent Escrows
         </button>
         <button class="nav-tab" data-tab="oracle" id="nav-tab-oracle">
           TruthForge Oracle
         </button>
       </nav>
 
-      <!-- Sub Telemetry / Network Bar -->
       <div class="nav-wallet">
-        <div class="network-badge">
-          <span>GenLayer Bradbury</span>
+        <button class="action-btn btn-sm" id="connect-wallet-btn" onclick="window.openConnectWalletModal()">
+          <span id="wallet-btn-icon">⚡</span>
+          <span id="wallet-btn-text">Connect Wallet</span>
+        </button>
+
+        <div class="user-profile-badge" id="nav-profile-badge">
+          <div>
+            <div id="nav-user-name" style="font-size:0.82rem;font-weight:700;">User</div>
+            <div class="role-pill" id="nav-user-role">CLIENT</div>
+          </div>
         </div>
 
         <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme">
@@ -184,446 +140,169 @@
       </div>
     </header>
 
-    <!-- Main Content Area -->
     <main class="main-content">
-      <!-- Role Welcome Header -->
-      <section class="role-hero-banner" id="personalized-role-banner">
-        <div class="role-hero-left">
-          <h3 id="role-welcome-title">Welcome to Intellex Protocol</h3>
-          <p id="role-welcome-desc">Operating on GenLayer Bradbury Network with autonomous AI verification.</p>
-        </div>
-        <div class="role-hero-actions">
-          <button class="action-btn" id="role-primary-action-btn">
-            + Deploy New Escrow Bounty
-          </button>
-        </div>
-      </section>
-
-      <!-- Network Telemetry -->
+      <!-- HERO BANNER & 4-NODE PIPELINE DIAGRAM -->
       <section class="hero-banner">
-        <h2 class="hero-title">Autonomous AI-Governed <span class="highlight">Escrow Bounties</span> &amp; Intelligent Contracts</h2>
+        <h2 class="hero-title">Intelligent Escrow for Work You Can <span class="highlight">Verify.</span></h2>
         <p class="hero-desc">
-          Connect your Web3 Wallet extension (MetaMask, Rabby, Coinbase, Trust, Rainbow, OKX) to deploy AI-governed Intelligent Escrow Vaults on GenLayer Bradbury. Milestone payouts are verified autonomously by LLM reasoning and real-time web scrapers inside GenVM.
+          Create agreements, submit deliverable evidence, and let GenLayer autonomously verify work against acceptance criteria before on-chain settlement on GenLayer Bradbury Testnet.
         </p>
 
-        <div class="network-stats-row">
-          <div class="stat-item">
-            <span class="stat-label">Escrow Contract Address</span>
-            <div class="stat-value neon" id="stat-deployed-escrow" style="font-size:0.88rem;">
-              <a href="https://studio.genlayer.com/contract/0x3Fc6Ba2C953Bdc8d80AFd1599B9EE245C0761827" target="_blank" style="color:var(--primary);text-decoration:underline;">0x3Fc6...1827</a>
-            </div>
-            <button class="secondary-btn btn-sm" onclick="window.copyContractAddress('0x3Fc6Ba2C953Bdc8d80AFd1599B9EE245C0761827')" style="margin-top:6px;font-size:0.7rem;padding:2px 8px;">
-              Copy Address
-            </button>
+        <div class="pipeline-visualizer">
+          <div class="pipeline-node">
+            <span class="pipeline-step-badge">01 SNAPSHOT</span>
+            <h4>Evidence Submitted</h4>
+            <p>Contractor submits PR or deliverable URL with SHA-256 evidence hash.</p>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Oracle Contract Address</span>
-            <div class="stat-value neon" id="stat-deployed-oracle" style="font-size:0.88rem;">
-              <a href="https://studio.genlayer.com/contract/0xF4137609FEa2259a2ea1814D540a3c7a8b4fdD6F" target="_blank" style="color:var(--primary);text-decoration:underline;">0xF413...dD6F</a>
-            </div>
-            <button class="secondary-btn btn-sm" onclick="window.copyContractAddress('0xF4137609FEa2259a2ea1814D540a3c7a8b4fdD6F')" style="margin-top:6px;font-size:0.7rem;padding:2px 8px;">
-              Copy Address
-            </button>
+          <div class="pipeline-node ai-orb-node">
+            <span class="ai-orb-icon"></span>
+            <span class="pipeline-step-badge">02 AI EVALUATION</span>
+            <h4>GenVM AI Reasoning</h4>
+            <p>LLM reasoning evaluates criteria inside GenVM sandbox containers.</p>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Active Committee Validators</span>
-            <div class="stat-value neon" id="stat-validators">5 Nodes</div>
+          <div class="pipeline-node">
+            <span class="pipeline-step-badge">03 CONSENSUS</span>
+            <h4>Committee Consensus</h4>
+            <p>Independent committee validators check score without decision anchoring.</p>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Network Environment</span>
-            <div class="stat-value" id="stat-network" style="color:var(--primary);font-weight:700;">GenLayer Bradbury</div>
+          <div class="pipeline-node">
+            <span class="pipeline-step-badge">04 SETTLEMENT</span>
+            <h4>On-Chain Settlement</h4>
+            <p>Escrow balance disburses automatically upon verified verdict.</p>
           </div>
         </div>
       </section>
 
-      <!-- TAB 1: INTELLIGENT ESCROW BOUNTIES -->
+      <!-- TAB 1: INTELLIGENT ESCROWS -->
       <section class="tab-content active" id="escrows-tab">
-        <div class="section-header">
-          <div class="section-title" id="escrow-section-title">
-            Intelligent Escrow Bounties &amp; Tasks
+        <div class="search-filter-section">
+          <div class="search-box-wrapper">
+            <input type="text" class="search-input" id="escrow-search-input" placeholder="Search bounties by title, category, or ID...">
+          </div>
+          <div class="filter-chips">
+            <button class="filter-chip active" data-filter="all">All Bounties</button>
+            <button class="filter-chip" data-filter="open">Open</button>
+            <button class="filter-chip" data-filter="active">Active</button>
+            <button class="filter-chip" data-filter="submitted">Submitted</button>
+            <button class="filter-chip" data-filter="verifying">Verifying</button>
+            <button class="filter-chip" data-filter="payout_claimable">Approved</button>
+            <button class="filter-chip" data-filter="payout_claimed">Completed</button>
           </div>
           <button class="action-btn" id="open-create-escrow-btn">
-            + Deploy New Escrow Bounty
+            + Deploy New Escrow
           </button>
         </div>
 
-        <div class="search-filter-section">
-          <div class="search-box-wrapper">
-            <input type="text" class="search-input" id="escrow-search-input" placeholder="Search bounties by title, category, requirements, or wallet address...">
-          </div>
-
-          <div class="filter-chips">
-            <button class="filter-chip active" data-filter="all">All Bounties (<span id="count-all">0</span>)</button>
-            <button class="filter-chip" data-filter="open">Open Bounties (<span id="count-open">0</span>)</button>
-            <button class="filter-chip" data-filter="my-jobs">My Bounties (<span id="count-my">0</span>)</button>
-            <button class="filter-chip" data-filter="completed">Verified (<span id="count-completed">0</span>)</button>
-          </div>
-        </div>
-
-        <div class="cards-grid" id="escrows-list">
-          <!-- Dynamic Cards -->
+        <div class="cards-grid" id="escrow-cards-container">
+          <!-- Dynamic Escrow Cards Injected by JS -->
         </div>
       </section>
 
       <!-- TAB 2: TRUTHFORGE ORACLE -->
-      <section class="tab-content" id="oracle-tab">
-        <div class="section-header">
-          <div class="section-title">
-            TruthForge Autonomous Prediction Markets
-          </div>
+      <section class="tab-content" id="oracle-tab" style="display:none;">
+        <div class="search-filter-section">
+          <div class="section-title">TruthForge Oracle Prediction Markets</div>
           <button class="action-btn" id="open-create-market-btn">
-            + Create Truth Market
+            + Create Oracle Market
           </button>
         </div>
-
-        <div class="cards-grid" id="markets-list">
-          <!-- Dynamic Markets -->
+        <div class="cards-grid" id="oracle-cards-container">
+          <!-- Dynamic Oracle Cards Injected by JS -->
         </div>
       </section>
     </main>
+  </div>
 
-    <!-- TOAST CONTAINER -->
-    <div class="toast-container" id="toast-container"></div>
-
-    <!-- MODAL 0: MODERNIZED WEB3 WALLET CONNECT & MANAGEMENT -->
-    <div class="modal-overlay" id="connect-wallet-modal">
-      <div class="modal-card wallet-modal-card">
-        <div class="modal-header">
-          <div>
-            <h3 class="modal-title" style="display:flex;align-items:center;gap:8px;">
-              <span>Web3 Wallet Connection</span>
-              <span style="font-size:0.72rem;padding:3px 8px;border-radius:12px;background:rgba(var(--primary-rgb),0.15);color:var(--primary);font-weight:700;">EIP-1193</span>
-            </h3>
-            <p style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;margin-bottom:0;">
-              Connect browser wallet extension to deploy &amp; claim escrow bounties
-            </p>
-          </div>
-          <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-
-        <!-- Connected Wallet Card View (shows when wallet is active) -->
-        <div id="connected-wallet-panel" style="display:none;padding:16px;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.3);border-radius:var(--radius-md);margin-top:1rem;margin-bottom:1.25rem;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Connected Extension</span>
-            <span style="font-size:0.75rem;color:var(--success);font-weight:700;display:flex;align-items:center;gap:4px;">
-              <span class="pulse-dot"></span> Active
-            </span>
-          </div>
-          <div style="font-family:var(--font-mono);font-size:0.92rem;font-weight:700;color:var(--text-main);word-break:break-all;margin-bottom:10px;" id="connected-wallet-address">
-            0x0000...0000
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:0.8rem;color:var(--text-muted);">
-            <span>Network: <strong style="color:var(--primary);">GenLayer Bradbury</strong></span>
-            <span>•</span>
-            <span>Balance: <strong style="color:var(--success);">1,250 GEN</strong></span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <button class="secondary-btn btn-sm" onclick="window.copyContractAddress(state.connectedWallet)">Copy Address</button>
-            <button class="secondary-btn btn-sm" style="border-color:var(--danger);color:var(--danger);" onclick="window.disconnectWallet();window.closeModals();">Disconnect</button>
-          </div>
-        </div>
-
-        <!-- Dynamic List of Detected Browser Wallets -->
-        <div class="wallet-grid-list" id="detected-wallets-list">
-          <!-- Rendered dynamically by detectAvailableWallets() -->
-        </div>
-
-        <div style="padding:12px 14px;background:rgba(var(--primary-rgb),0.06);border:1px solid rgba(var(--primary-rgb),0.2);border-radius:var(--radius-md);font-size:0.78rem;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;">
-          <span>Network: <strong>GenLayer Bradbury</strong></span>
-          <span style="color:var(--success);font-weight:700;display:flex;align-items:center;gap:4px;">
-            <span class="pulse-dot"></span> Online
-          </span>
-        </div>
+  <!-- MODAL 1: CONNECT WALLET EXTENSION MODAL -->
+  <div class="modal-overlay" id="connect-wallet-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Connect Web3 Wallet</h3>
+        <button class="modal-close-btn" onclick="window.closeConnectWalletModal()">&times;</button>
       </div>
-    </div>
-
-    <!-- MODAL 1: CREATE ESCROW BOUNTY -->
-    <div class="modal-overlay" id="create-escrow-modal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">Deploy Escrow Bounty Vault</h3>
-          <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-
-        <form id="create-escrow-form">
-          <div class="form-group">
-            <label class="form-label">Bounty Task Title</label>
-            <input type="text" class="form-control" id="escrow-title" placeholder="e.g. Smart Contract Security Audit" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Category</label>
-            <select class="form-control" id="escrow-category">
-              <option value="Smart Contract Security">Smart Contract Security</option>
-              <option value="SDK & Developer Tooling" selected>SDK & Developer Tooling</option>
-              <option value="Design & UI/UX">Design & UI/UX</option>
-              <option value="AI Agents & GenVM">AI Agents & GenVM</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Bounty Description</label>
-            <textarea class="form-control" id="escrow-desc" placeholder="Summary of required deliverable and objectives..." required></textarea>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div class="form-group">
-              <label class="form-label">Assignment</label>
-              <select class="form-control" id="escrow-assignment-mode">
-                <option value="open">Open Community Task (Anyone can claim)</option>
-                <option value="assigned">Specific Contractor Wallet</option>
-              </select>
-            </div>
-            <div class="form-group" id="contractor-input-wrapper" style="display:none;">
-              <label class="form-label">Contractor Wallet Address</label>
-              <input type="text" class="form-control" id="escrow-contractor" placeholder="0x...">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Escrow Deposit Amount (GEN)</label>
-              <input type="number" class="form-control" id="escrow-amount" placeholder="e.g. 500" min="10" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Task Requirements</label>
-            <input type="text" class="form-control" id="escrow-requirements" placeholder="Requirements summary..." required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">AI Acceptance Criteria</label>
-            <textarea class="form-control" id="escrow-criteria" rows="3" placeholder="Acceptance criteria for AI verification..." required></textarea>
-          </div>
-
-          <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);margin-bottom:1rem;font-size:0.82rem;color:var(--text-main);">
-            <strong>Payment Required:</strong> Creating a bounty will prompt your connected Web3 extension wallet to process and lock the escrow deposit before publicizing to Builders globally.
-          </div>
-
-          <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:0.5rem;">
-            Proceed to Web3 Payment &amp; Deposit
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL 1.5: WEb3 WALLET PAYMENT & CONTRACT DEPOSIT -->
-    <div class="modal-overlay" id="deposit-payment-modal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">Web3 Wallet Payment &amp; Escrow Deposit</h3>
-          <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-
-        <div style="padding:14px;background:rgba(var(--primary-rgb), 0.1);border:1px solid rgba(var(--primary-rgb), 0.3);border-radius:var(--radius-md);margin-bottom:1.25rem;">
-          <div style="font-size:0.95rem;font-weight:700;color:var(--primary);margin-bottom:4px;">
-            Payment Required to Publicize Bounty
-          </div>
-          <div style="font-size:0.85rem;color:var(--text-main);">
-            To publish <strong id="deposit-task-title" style="color:var(--primary);">Bounty Task</strong> to Builders worldwide, process a payment deposit of <strong id="deposit-task-amount" style="color:var(--success);">500 GEN</strong> to the GenLayer Intelligent Escrow Vault.
-          </div>
-        </div>
-
-        <!-- Wallet Payment Summary Box -->
-        <div style="background:var(--bg-glass);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px;margin-bottom:1.25rem;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem;">
-            <span style="color:var(--text-muted);">From Wallet:</span>
-            <span style="font-family:var(--font-mono);color:var(--text-main);font-weight:600;" id="payment-from-wallet">Connected Wallet</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem;">
-            <span style="color:var(--text-muted);">To Escrow Contract:</span>
-            <span style="font-family:var(--font-mono);color:var(--primary);font-weight:600;">0xc40d...20Ec</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:0.95rem;font-weight:700;padding-top:8px;border-top:1px solid var(--border-subtle);">
-            <span>Deposit Amount:</span>
-            <span style="color:var(--success);" id="payment-amount-display">500 GEN</span>
-          </div>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <button type="button" class="action-btn" id="confirm-deposit-sent-btn" style="width:100%;padding:14px;font-size:0.98rem;background:var(--primary-gradient);">
-            🔒 Pay &amp; Lock Funds in Escrow Vault
-          </button>
-          <button type="button" class="secondary-btn" onclick="window.closeModals()" style="width:100%;">
-            Save as Unpaid Draft
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL 2: SUBMIT DELIVERABLE -->
-    <div class="modal-overlay" id="submit-deliverable-modal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">Submit Deliverable for AI Verification</h3>
-          <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-        <form id="submit-deliverable-form">
-          <div class="form-group">
-            <label class="form-label">Deliverable URL (GitHub / Figma / Docs)</label>
-            <input type="url" class="form-control" id="deliv-url" placeholder="https://github.com/myorg/project-repo" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Contractor Submission Notes</label>
-            <textarea class="form-control" id="deliv-notes" rows="4" placeholder="Detail how requirements were fulfilled..." required></textarea>
-          </div>
-          <button type="submit" class="action-btn" id="submit-deliv-btn" style="width:100%;margin-top:1rem;">
-            Submit to Intelligent Contract
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL 3: DEVELOPER PAYOUT DESTINATION ADDRESS PROMPT -->
-    <div class="modal-overlay" id="payout-address-modal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">Enter Payout Destination Address</h3>
-          <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-        <div style="padding:12px;background:rgba(16, 185, 129, 0.1);border:1px solid rgba(16, 185, 129, 0.3);border-radius:var(--radius-md);margin-bottom:1.25rem;">
-          <div style="font-size:0.95rem;font-weight:700;color:var(--success);margin-bottom:4px;">
-            Task Verification Passed!
-          </div>
-          <div style="font-size:0.85rem;color:var(--text-main);">
-            GenVM Committee verified your deliverable (Score: <span id="payout-score-tag">92</span>/100). The escrow vault is ready to disburse <strong id="payout-amount-tag" style="color:var(--primary);">500 GEN</strong> on GenLayer Bradbury.
-          </div>
-        </div>
-
-        <form id="payout-address-form">
-          <div class="form-group">
-            <label class="form-label">Payout Destination Address</label>
-            <input type="text" class="form-control" id="payout-destination-address" placeholder="Enter your payout address (e.g. 0x...)" required>
-          </div>
-
-          <button type="submit" class="action-btn" id="confirm-payout-btn" style="width:100%;margin-top:1rem;">
-            Disburse Payment to Address
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL 4: GENVM AI ARBITRATION VISUALIZER WITH SPINNER -->
-    <div class="modal-overlay" id="ai-arbitration-modal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">GenVM AI Arbitration in Progress</h3>
-          <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;">
-          <div class="spinner"></div>
-          <p style="font-size:0.88rem;color:var(--text-muted);margin:0;">
-            Executing decentralized non-deterministic verification across GenLayer Bradbury committee validators.
-          </p>
-        </div>
-
-        <div class="genvm-execution-flow">
-          <div class="step-row" id="step-1">
-            <div class="step-icon">1</div>
-            <div class="step-info">
-              <h4>Committee Selection</h4>
-              <p>5 Staked Validator Nodes appointed for consensus round</p>
-            </div>
-          </div>
-          <div class="step-row" id="step-2">
-            <div class="step-icon">2</div>
-            <div class="step-info">
-              <h4>Non-Deterministic Web Ingestion</h4>
-              <p>Executing gl.nondet.web.render() on submitted deliverable snapshot</p>
-            </div>
-          </div>
-          <div class="step-row" id="step-3">
-            <div class="step-icon">3</div>
-            <div class="step-info">
-              <h4>LLM Reasoning &amp; Rubric Scoring</h4>
-              <p>Executing gl.nondet.exec_prompt() against milestone acceptance criteria</p>
-            </div>
-          </div>
-          <div class="step-row" id="step-4">
-            <div class="step-icon">4</div>
-            <div class="step-info">
-              <h4>Equivalence Principle Consensus</h4>
-              <p>Aggregating BLS validator signatures &amp; verifying non-comparative consensus</p>
-            </div>
-          </div>
-          <div class="step-row" id="step-5">
-            <div class="step-icon">5</div>
-            <div class="step-info">
-              <h4>Autonomous Verification Finalized</h4>
-              <p>Prompting developer for payout destination address</p>
-            </div>
-          </div>
-        </div>
-
-        <div id="arbitration-status-text" style="font-family:var(--font-mono);font-size:0.82rem;color:var(--primary);text-align:center;padding:10px;background:rgba(var(--primary-rgb), 0.08);border-radius:var(--radius-sm);border:1px solid rgba(var(--primary-rgb), 0.2);">
-          Initializing GenVM Execution Environment...
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL 5: RESOLUTION REPORT -->
-    <div class="modal-overlay" id="resolution-details-modal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">GenLayer AI Verification Report</h3>
-          <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-        <div id="report-modal-body">
-          <!-- Populated by JS -->
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL 6: STAKE ON MARKET -->
-    <div class="modal-overlay" id="stake-modal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">Stake on Outcome</h3>
-          <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-        <form id="stake-form">
-          <div style="font-size:1.1rem;margin-bottom:1rem;">
-            Staking on: <span id="stake-side-indicator" style="font-weight:700;">YES</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Stake Amount (GEN)</label>
-            <input type="number" class="form-control" id="stake-amount" value="50" min="1" required>
-          </div>
-          <button type="submit" class="action-btn" id="stake-submit-btn" style="width:100%;margin-top:1rem;">
-            Confirm Stake
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL 7: CREATE MARKET -->
-    <div class="modal-overlay" id="create-market-modal">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 class="modal-title">Create TruthForge Oracle Market</h3>
-          <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-        <form id="create-market-form">
-          <div class="form-group">
-            <label class="form-label">Market Question / Claim</label>
-            <input type="text" class="form-control" id="market-question" placeholder="e.g. Did Ethereum gas drop below 5 gwei on August 15, 2026?" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Category</label>
-            <input type="text" class="form-control" id="market-category" value="Crypto & Web3" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Resolution Criteria</label>
-            <textarea class="form-control" id="market-criteria" rows="2" placeholder="Exact conditions under which outcome is YES vs NO..." required></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Verified Resolution Sources (URLs, 1 per line)</label>
-            <textarea class="form-control" id="market-sources" rows="3" placeholder="https://..." required></textarea>
-          </div>
-          <button type="submit" class="action-btn" style="width:100%;margin-top:1rem;">
-            Deploy Truth Market
-          </button>
-        </form>
+      <p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:0.9rem;">
+        Select your installed Web3 Wallet extension to connect to GenLayer Bradbury.
+      </p>
+      <div style="display:grid;gap:10px;">
+        <button class="secondary-btn" style="justify-content:flex-start;" onclick="window.connectWeb3Wallet('metamask')">
+          🦊 MetaMask / Web3 Extension
+        </button>
+        <button class="secondary-btn" style="justify-content:flex-start;" onclick="window.connectWeb3Wallet('rabby')">
+          🐰 Rabby Wallet
+        </button>
+        <button class="secondary-btn" style="justify-content:flex-start;" onclick="window.connectWeb3Wallet('coinbase')">
+          🔵 Coinbase Wallet
+        </button>
       </div>
     </div>
   </div>
 
-  <script src="js/contracts_code.js"></script>
+  <!-- MODAL 2: CREATE ESCROW WIZARD MODAL -->
+  <div class="modal-overlay" id="create-escrow-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Deploy New Escrow Vault</h3>
+        <button class="modal-close-btn" onclick="window.closeCreateEscrowModal()">&times;</button>
+      </div>
+      <form id="create-escrow-form">
+        <div class="form-group">
+          <label class="form-label">Task Title</label>
+          <input type="text" class="form-control" id="escrow-title" placeholder="e.g. Implement Py-GenLayer SDK Feature" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <input type="text" class="form-control" id="escrow-category" placeholder="SDK & Developer Tooling" value="SDK & Developer Tooling">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Requirements</label>
+          <textarea class="form-control" id="escrow-requirements" placeholder="Detailed technical requirements..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Acceptance Criteria (for AI Evaluator)</label>
+          <textarea class="form-control" id="escrow-criteria" placeholder="1. Tests pass 100%. 2. Code is clean..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bounty Amount (GEN)</label>
+          <input type="number" class="form-control" id="escrow-amount" placeholder="500" value="500" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quality Threshold Score (0 - 100)</label>
+          <input type="number" class="form-control" id="escrow-quality-threshold" placeholder="80" value="80" min="0" max="100" required>
+        </div>
+        <button type="submit" class="action-btn" style="width:100%;margin-top:1rem;">
+          Deploy Vault on-Chain
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: SUBMIT DELIVERABLE MODAL -->
+  <div class="modal-overlay" id="submit-deliverable-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Submit Deliverable Evidence</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('submit-deliverable-modal').classList.remove('active')">&times;</button>
+      </div>
+      <form id="submit-deliverable-form">
+        <div class="form-group">
+          <label class="form-label">Deliverable URL (GitHub PR or Live Site)</label>
+          <input type="url" class="form-control" id="deliv-url" placeholder="https://github.com/org/repo/pull/1" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contractor Notes &amp; Verification Evidence</label>
+          <textarea class="form-control" id="deliv-notes" placeholder="Summarize changes and provide evidence links..." required></textarea>
+        </div>
+        <button type="submit" class="action-btn" style="width:100%;margin-top:1rem;">
+          Submit to Intelligent Contract
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- SCRIPTS -->
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
