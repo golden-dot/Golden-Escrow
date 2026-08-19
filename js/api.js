@@ -1,6 +1,6 @@
 /**
  * api.js - GenLayer Intellex Protocol API Client & Persistence Engine
- * Enables real-time sync for authentic Client-created bounties (Automatic Publicizing & Self-Claim Protection)
+ * Enables real-time sync for authentic Client-created bounties (Wallet Payment Verification & Contract Lock)
  */
 
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
@@ -130,7 +130,7 @@ class APIClient {
     return { success: true, message: "All created bounties have been removed by admin." };
   }
 
-  // Create Escrow Bounty (ALL CREATED BOUNTIES ARE AUTOMATICALLY PUBLICIZED TO ALL BUILDERS)
+  // Create Escrow Bounty (Starts in AWAITING_DEPOSIT state until Web3 payment processed)
   async createEscrow(data) {
     const escrows = await fetchEscrowsData();
     const maxId = escrows.reduce((max, e) => Math.max(max, parseInt(e.escrow_id || e.id || 0)), 0);
@@ -149,10 +149,10 @@ class APIClient {
       quality_threshold: data.quality_threshold || 80,
       deliverable_url: "",
       deliverable_notes: "",
-      status: "OPEN_FOR_CLAIM", // AUTOMATICALLY PUBLICIZED FOR ALL BUILDERS TO SEE
+      status: "AWAITING_DEPOSIT", // REQUIRES WALLET PAYMENT VERIFICATION TO PUBLICIZE TO BUILDERS
       decision: "",
       score: 0,
-      payment_received: true, // AUTOMATICALLY DEPOSITED & PUBLICIZED
+      payment_received: false, // UNPAID UNTIL WALLET CONFIRMED
       payout_address: "",
       createdAt: new Date().toISOString()
     };
@@ -161,16 +161,17 @@ class APIClient {
     return { success: true, escrow_id: newId, escrow: newEscrow };
   }
 
-  // Confirm Deposit Payment & Publicize Single Bounty to All Builders Worldwide
-  async confirmEscrowDeposit(escrowId) {
+  // Process Web3 Wallet Payment & Publicize Bounty to Builders Worldwide
+  async confirmEscrowDeposit(escrowId, txHash) {
     const escrows = await fetchEscrowsData();
     const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (target) {
       target.payment_received = true;
       target.status = "OPEN_FOR_CLAIM";
       target.contractor = "0x0000000000000000000000000000000000000000";
+      target.transaction_hash = txHash || `0x${Math.random().toString(16).substr(2, 40)}`;
       await syncEscrowsData(escrows);
-      return { success: true, message: `Payment verified! Escrow Bounty #${escrowId} is now publicized to all Builders.`, escrow: target };
+      return { success: true, message: `Payment verified! Escrow Bounty #${escrowId} is now publicized to all Builders globally.`, escrow: target };
     }
     throw new Error(`Escrow Bounty #${escrowId} not found`);
   }

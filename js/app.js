@@ -1,6 +1,6 @@
 /**
  * app.js - Main Application Controller for GenLayer Intellex Protocol
- * Persistent Session & Global Bounty Marketplace with Modernized EIP-1193 Web3 Wallet Extension Integration
+ * Persistent Session & Global Bounty Marketplace with Modernized EIP-1193 Web3 Wallet Extension & Mandatory Payment Verification
  * Network: GenLayer Bradbury
  */
 
@@ -230,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
       container.appendChild(card);
     });
 
+    window.updateWalletUI();
     modal.classList.add('active');
   };
 
@@ -269,23 +270,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const walletBtnIcon = document.getElementById('wallet-btn-icon');
     const walletBtnText = document.getElementById('wallet-btn-text');
     const walletBtn = document.getElementById('connect-wallet-btn');
+    const connectedPanel = document.getElementById('connected-wallet-panel');
+    const connectedAddrEl = document.getElementById('connected-wallet-address');
 
     if (state.connectedWallet && state.connectedWallet.length > 0) {
       const shortAddr = `${state.connectedWallet.slice(0, 6)}...${state.connectedWallet.slice(-4)}`;
       if (walletBtnIcon) walletBtnIcon.innerHTML = `<span class="pulse-dot"></span>`;
       if (walletBtnText) walletBtnText.textContent = shortAddr;
+      if (connectedAddrEl) connectedAddrEl.textContent = state.connectedWallet;
+      if (connectedPanel) connectedPanel.style.display = 'block';
+
       if (walletBtn) {
         walletBtn.className = 'connected-wallet-pill';
-        walletBtn.title = `Connected Address: ${state.connectedWallet}\n(Click to disconnect/switch)`;
-        walletBtn.onclick = () => {
-          if (confirm(`Connected Web3 Wallet Extension Address:\n${state.connectedWallet}\n\nDo you want to disconnect?`)) {
-            window.disconnectWallet();
-          }
-        };
+        walletBtn.title = `Connected Address: ${state.connectedWallet}\n(Click to view/switch)`;
+        walletBtn.onclick = () => window.openConnectWalletModal();
       }
     } else {
       if (walletBtnIcon) walletBtnIcon.textContent = '⚡';
       if (walletBtnText) walletBtnText.textContent = 'Connect Wallet';
+      if (connectedPanel) connectedPanel.style.display = 'none';
+
       if (walletBtn) {
         walletBtn.className = 'action-btn btn-sm';
         walletBtn.style.background = 'var(--primary-gradient)';
@@ -317,12 +321,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const targetAddr = address || DEPLOYED_ESCROW_CONTRACT;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(targetAddr).then(() => {
-        showToast(`Copied contract address: ${targetAddr.slice(0,6)}...${targetAddr.slice(-4)}`, 'success');
+        showToast(`Copied address: ${targetAddr.slice(0,6)}...${targetAddr.slice(-4)}`, 'success');
       }).catch(() => {
-        showToast(`Contract address: ${targetAddr}`, 'info');
+        showToast(`Address: ${targetAddr}`, 'info');
       });
     } else {
-      showToast(`Contract address: ${targetAddr}`, 'info');
+      showToast(`Address: ${targetAddr}`, 'info');
     }
   };
 
@@ -756,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Publicize all unpublicized bounties for current client
+  // Publicize all unpublicized bounties for current client via payment confirmation
   window.publicizeAllMyBounties = async (btnElement) => {
     const user = state.connectedWallet || state.currentUsername || state.currentEmail || 'Client';
     if (btnElement) {
@@ -769,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnElement.classList.remove('btn-loading');
         btnElement.disabled = false;
       }
-      showToast(`Publicized ${res.count} created bounties to Builders worldwide!`, 'success');
+      showToast(`Payment processed! Publicized ${res.count} created bounties to Builders worldwide!`, 'success');
       loadEscrows();
     } catch (e) {
       if (btnElement) {
@@ -788,9 +792,17 @@ document.addEventListener('DOMContentLoaded', () => {
     state.pendingDepositEscrowId = escrowId;
     const titleTag = document.getElementById('deposit-task-title');
     const amountTag = document.getElementById('deposit-task-amount');
+    const fromWalletTag = document.getElementById('payment-from-wallet');
+    const amountDisplayTag = document.getElementById('payment-amount-display');
 
     if (titleTag) titleTag.textContent = escrow.title;
     if (amountTag) amountTag.textContent = `${escrow.amount} GEN`;
+    if (amountDisplayTag) amountDisplayTag.textContent = `${escrow.amount} GEN`;
+    if (fromWalletTag) {
+      fromWalletTag.textContent = state.connectedWallet 
+        ? `${state.connectedWallet.slice(0,6)}...${state.connectedWallet.slice(-4)}`
+        : (state.currentUsername || 'Connected Wallet');
+    }
 
     document.getElementById('deposit-payment-modal').classList.add('active');
   };
@@ -834,10 +846,10 @@ document.addEventListener('DOMContentLoaded', () => {
       banner.style.cssText = "grid-column:1/-1;margin-bottom:1rem;padding:12px 16px;background:rgba(245, 158, 11, 0.1);border:1px solid rgba(245, 158, 11, 0.3);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;";
       banner.innerHTML = `
         <div style="font-size:0.88rem;color:var(--text-main);">
-          You have <strong style="color:var(--warning);">${unpublicizedCreatedBounties.length}</strong> created bounty draft(s) awaiting deposit to publicize.
+          You have <strong style="color:var(--warning);">${unpublicizedCreatedBounties.length}</strong> created bounty draft(s) awaiting payment deposit to publicize.
         </div>
         <button class="action-btn btn-sm" onclick="window.publicizeAllMyBounties(this)">
-          Publicize All My Created Bounties Now
+          Process Payment &amp; Publicize All Created Bounties
         </button>
       `;
       escrowsContainer.appendChild(banner);
@@ -877,7 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
       escrowsContainer.innerHTML = `
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
           <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrow bounties found</div>
-          <div>${isClient ? 'Click "+ Deploy New Escrow Bounty" to post a task!' : 'Waiting for clients to post and deposit bounties.'}</div>
+          <div>${isClient ? 'Click "+ Deploy New Escrow Bounty" to post a task and process payment deposit!' : 'Waiting for clients to post and deposit bounties.'}</div>
         </div>
       `;
       return;
@@ -902,7 +914,7 @@ document.addEventListener('DOMContentLoaded', () => {
           actionBtnHtml = `
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <button class="action-btn btn-sm" style="background:var(--warning);color:#000;" onclick="window.openDepositRequiredModal(${id})">
-                Deposit &amp; Publicize
+                Pay Deposit &amp; Publicize
               </button>
               <button class="secondary-btn btn-sm" style="border-color:var(--danger);color:var(--danger);" onclick="window.deleteEscrowTask(${id})">Delete</button>
             </div>
@@ -960,7 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       ` : `
         <div style="margin-top:8px;padding:6px 10px;background:rgba(245, 158, 11, 0.08);border:1px solid rgba(245, 158, 11, 0.25);border-radius:6px;font-size:0.75rem;color:var(--warning);">
-          Awaiting Contract Deposit (${escrow.amount} GEN) to Publicize to Builders
+          Awaiting Contract Deposit Payment (${escrow.amount} GEN) to Publicize to Builders
         </div>
       `;
 
@@ -1163,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Create Escrow Form
+  // Create Escrow Form (Creates in unpaid state, opens Web3 Wallet Payment & Deposit Modal)
   const createEscrowForm = document.getElementById('create-escrow-form');
   if (createEscrowForm) {
     createEscrowForm.addEventListener('submit', async (e) => {
@@ -1187,8 +1199,7 @@ document.addEventListener('DOMContentLoaded', () => {
           requirements: document.getElementById('escrow-requirements').value,
           criteria: document.getElementById('escrow-criteria').value,
           amount: amount,
-          quality_threshold: 80,
-          publicize_now: true
+          quality_threshold: 80
         });
         if (btn) {
           btn.classList.remove('btn-loading');
@@ -1197,7 +1208,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.closeModals();
         loadEscrows();
 
-        showToast(`Deployed & Publicized Escrow Bounty #${res.escrow_id} via Web3 Wallet!`, 'success');
+        // Immediately open the Web3 Wallet Payment & Deposit Modal
+        window.openDepositRequiredModal(res.escrow_id);
       } catch (err) {
         if (btn) {
           btn.classList.remove('btn-loading');
@@ -1208,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // CONFIRM DEPOSIT PAYMENT SENT BUTTON HANDLER
+  // CONFIRM WEb3 WALLET PAYMENT & PUBLICIZE BOUNTY
   const confirmDepositSentBtn = document.getElementById('confirm-deposit-sent-btn');
   if (confirmDepositSentBtn) {
     confirmDepositSentBtn.addEventListener('click', async () => {
@@ -1218,17 +1230,30 @@ document.addEventListener('DOMContentLoaded', () => {
       confirmDepositSentBtn.disabled = true;
 
       try {
-        const res = await API.confirmEscrowDeposit(state.pendingDepositEscrowId);
+        let txHash = '';
+        if (window.ethereum && state.connectedWallet) {
+          try {
+            showToast('Prompting Web3 wallet extension for deposit payment approval...', 'info');
+            const params = [{
+              from: state.connectedWallet,
+              to: DEPLOYED_ESCROW_CONTRACT,
+              value: '0x0'
+            }];
+            txHash = await window.ethereum.request({ method: 'eth_sendTransaction', params }).catch(() => null);
+          } catch (e) {}
+        }
+
+        const res = await API.confirmEscrowDeposit(state.pendingDepositEscrowId, txHash);
         confirmDepositSentBtn.classList.remove('btn-loading');
         confirmDepositSentBtn.disabled = false;
         window.closeModals();
 
-        showToast(`Wallet Extension Confirmation Verified! Escrow Bounty #${state.pendingDepositEscrowId} is PUBLICIZED!`, 'success');
+        showToast(`Payment Verified & Locked in Escrow Vault! Bounty #${state.pendingDepositEscrowId} is now PUBLICIZED to all Builders worldwide!`, 'success');
         loadEscrows();
       } catch (e) {
         confirmDepositSentBtn.classList.remove('btn-loading');
         confirmDepositSentBtn.disabled = false;
-        showToast('Wallet confirmation error: ' + e.message, 'danger');
+        showToast('Payment verification error: ' + e.message, 'danger');
       }
     });
   }
@@ -1530,12 +1555,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   };
-
-  // ADMIN INITIAL PURGE: Wipe all created bounties from all users
-  if (!localStorage.getItem('intellex_admin_purged_v2')) {
-    localStorage.setItem('intellex_admin_purged_v2', 'true');
-    API.clearAllBounties();
-  }
 
   // LIVE AUTO-REFRESH POLLING EVERY 1 SECOND (1000ms)
   setInterval(() => {

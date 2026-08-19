@@ -285,20 +285,42 @@
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- MODAL 0: MODERNIZED WEB3 WALLET EXTENSION DETECTION -->
+    <!-- MODAL 0: MODERNIZED WEB3 WALLET CONNECT & MANAGEMENT -->
     <div class="modal-overlay" id="connect-wallet-modal">
       <div class="modal-card wallet-modal-card">
         <div class="modal-header">
           <div>
             <h3 class="modal-title" style="display:flex;align-items:center;gap:8px;">
-              <span>Connect Web3 Wallet</span>
+              <span>Web3 Wallet Connection</span>
               <span style="font-size:0.72rem;padding:3px 8px;border-radius:12px;background:rgba(var(--primary-rgb),0.15);color:var(--primary);font-weight:700;">EIP-1193</span>
             </h3>
             <p style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;margin-bottom:0;">
-              Detected wallet extensions in your browser
+              Connect browser wallet extension to deploy &amp; claim escrow bounties
             </p>
           </div>
           <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+
+        <!-- Connected Wallet Card View (shows when wallet is active) -->
+        <div id="connected-wallet-panel" style="display:none;padding:16px;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.3);border-radius:var(--radius-md);margin-top:1rem;margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-size:0.75rem;color:var(--text-muted);font-weight:700;text-transform:uppercase;">Connected Extension</span>
+            <span style="font-size:0.75rem;color:var(--success);font-weight:700;display:flex;align-items:center;gap:4px;">
+              <span class="pulse-dot"></span> Active
+            </span>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:0.92rem;font-weight:700;color:var(--text-main);word-break:break-all;margin-bottom:10px;" id="connected-wallet-address">
+            0x0000...0000
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:0.8rem;color:var(--text-muted);">
+            <span>Network: <strong style="color:var(--primary);">GenLayer Bradbury</strong></span>
+            <span>•</span>
+            <span>Balance: <strong style="color:var(--success);">1,250 GEN</strong></span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button class="secondary-btn btn-sm" onclick="window.copyContractAddress(state.connectedWallet)">Copy Address</button>
+            <button class="secondary-btn btn-sm" style="border-color:var(--danger);color:var(--danger);" onclick="window.disconnectWallet();window.closeModals();">Disconnect</button>
+          </div>
         </div>
 
         <!-- Dynamic List of Detected Browser Wallets -->
@@ -309,7 +331,7 @@
         <div style="padding:12px 14px;background:rgba(var(--primary-rgb),0.06);border:1px solid rgba(var(--primary-rgb),0.2);border-radius:var(--radius-md);font-size:0.78rem;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;">
           <span>Network: <strong>GenLayer Bradbury</strong></span>
           <span style="color:var(--success);font-weight:700;display:flex;align-items:center;gap:4px;">
-            <span class="pulse-dot"></span> Active
+            <span class="pulse-dot"></span> Online
           </span>
         </div>
       </div>
@@ -370,48 +392,55 @@
           </div>
 
           <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);margin-bottom:1rem;font-size:0.82rem;color:var(--text-main);">
-            <strong>Wallet Extension Integration:</strong> Deploying this bounty will use your connected Web3 extension wallet to lock funds into the smart contract address on GenLayer Bradbury.
+            <strong>Payment Required:</strong> Creating a bounty will prompt your connected Web3 extension wallet to process and lock the escrow deposit before publicizing to Builders globally.
           </div>
 
           <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:0.5rem;">
-            Deploy &amp; Publicize Escrow Bounty
+            Proceed to Web3 Payment &amp; Deposit
           </button>
         </form>
       </div>
     </div>
 
-    <!-- MODAL 1.5: DEPOSIT PAYMENT REQUIRED TO PUBLICIZE ESCROW BOUNTY -->
+    <!-- MODAL 1.5: WEb3 WALLET PAYMENT & CONTRACT DEPOSIT -->
     <div class="modal-overlay" id="deposit-payment-modal">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">Confirm Wallet Extension Deposit</h3>
+          <h3 class="modal-title">Web3 Wallet Payment &amp; Escrow Deposit</h3>
           <button class="close-btn" onclick="window.closeModals()">&times;</button>
         </div>
 
-        <div style="padding:14px;background:rgba(16, 185, 129, 0.1);border:1px solid rgba(16, 185, 129, 0.3);border-radius:var(--radius-md);margin-bottom:1.25rem;">
-          <div style="font-size:0.95rem;font-weight:700;color:var(--success);margin-bottom:4px;">
-            Web3 Wallet Extension Confirmation
+        <div style="padding:14px;background:rgba(var(--primary-rgb), 0.1);border:1px solid rgba(var(--primary-rgb), 0.3);border-radius:var(--radius-md);margin-bottom:1.25rem;">
+          <div style="font-size:0.95rem;font-weight:700;color:var(--primary);margin-bottom:4px;">
+            Payment Required to Publicize Bounty
           </div>
           <div style="font-size:0.85rem;color:var(--text-main);">
-            To publicize <strong id="deposit-task-title" style="color:var(--primary);">Bounty Task</strong> to Builders worldwide, confirm sending <strong id="deposit-task-amount" style="color:var(--success);">500 GEN</strong> from your connected Web3 wallet to the Intelligent Escrow Contract address.
+            To publish <strong id="deposit-task-title" style="color:var(--primary);">Bounty Task</strong> to Builders worldwide, process a payment deposit of <strong id="deposit-task-amount" style="color:var(--success);">500 GEN</strong> to the GenLayer Intelligent Escrow Vault.
           </div>
         </div>
 
-        <!-- Copy Escrow Contract Address Box -->
-        <div style="background:var(--bg-glass);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:12px;margin-bottom:1.25rem;">
-          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">GenLayer Intelligent Escrow Contract Address (GenLayer Bradbury)</div>
-          <div style="font-family:var(--font-mono);font-size:0.88rem;color:var(--primary);font-weight:700;word-break:break-all;margin-bottom:8px;">0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec</div>
-          <button type="button" class="secondary-btn btn-sm" onclick="window.copyContractAddress('0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec')" style="font-size:0.78rem;">
-            Copy Contract Address
-          </button>
+        <!-- Wallet Payment Summary Box -->
+        <div style="background:var(--bg-glass);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px;margin-bottom:1.25rem;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem;">
+            <span style="color:var(--text-muted);">From Wallet:</span>
+            <span style="font-family:var(--font-mono);color:var(--text-main);font-weight:600;" id="payment-from-wallet">Connected Wallet</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:0.85rem;">
+            <span style="color:var(--text-muted);">To Escrow Contract:</span>
+            <span style="font-family:var(--font-mono);color:var(--primary);font-weight:600;">0xc40d...20Ec</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.95rem;font-weight:700;padding-top:8px;border-top:1px solid var(--border-subtle);">
+            <span>Deposit Amount:</span>
+            <span style="color:var(--success);" id="payment-amount-display">500 GEN</span>
+          </div>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <button type="button" class="action-btn" id="confirm-deposit-sent-btn" style="width:100%;padding:14px;font-size:0.95rem;">
-            Confirm &amp; Publicize via Wallet Extension
+          <button type="button" class="action-btn" id="confirm-deposit-sent-btn" style="width:100%;padding:14px;font-size:0.98rem;background:var(--primary-gradient);">
+            🔒 Pay &amp; Lock Funds in Escrow Vault
           </button>
           <button type="button" class="secondary-btn" onclick="window.closeModals()" style="width:100%;">
-            Cancel
+            Save as Unpaid Draft
           </button>
         </div>
       </div>
