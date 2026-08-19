@@ -62,8 +62,8 @@ app.add_middleware(
 )
 
 # Live Deployed Contract Addresses on GenLayer Bradbury
-DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec"
-DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC"
+DEPLOYED_ESCROW_CONTRACT = "0x16905a5cfC1C2c002c354eA83550c5259A961a15"
+DEPLOYED_ORACLE_CONTRACT = "0xAB923beD299513e13a7B6D507Dc00df1b512CaA7"
 
 # Initialize GenLayer Runtime & Intelligent Contracts (On-Chain Single Source of Truth)
 runtime = GenLayerRuntime()
