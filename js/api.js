@@ -6,24 +6,44 @@
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
-// Cloud Sync Endpoint (v5 fresh clean store - 0 active/open escrows)
-const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v5/escrows";
-const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v5/markets";
+// Cloud Sync Endpoint (v6 fresh clean store - zero demo bounties)
+const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v6/escrows";
+const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v6/markets";
 
-// Helper to get local fallback escrows (Purges all stored escrows)
+// Clean Filter to Purge Any Demo Accounts (0xAliceClient, 0xDevinClient, etc)
+function cleanEscrowsArray(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.filter(e => {
+    if (!e) return false;
+    const clientStr = (e.client || '').toLowerCase();
+    const titleStr = (e.title || '').toLowerCase();
+    
+    if (clientStr.includes('alice') || clientStr.includes('devin') || clientStr.includes('0xaliceclient') || clientStr.includes('0xdevinclient')) {
+      return false;
+    }
+    if (titleStr.includes('dex router security audit') || titleStr.includes('python sdk async websocket')) {
+      return false;
+    }
+    return true;
+  });
+}
+
 function getLocalEscrows() {
   try {
     const data = localStorage.getItem('intellex_global_escrows');
     if (!data) return [];
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : [];
+    let parsed = JSON.parse(data);
+    parsed = cleanEscrowsArray(parsed);
+    saveLocalEscrows(parsed);
+    return parsed;
   } catch (e) {
     return [];
   }
 }
 
 function saveLocalEscrows(escrows) {
-  localStorage.setItem('intellex_global_escrows', JSON.stringify(escrows));
+  const cleaned = cleanEscrowsArray(escrows);
+  localStorage.setItem('intellex_global_escrows', JSON.stringify(cleaned));
 }
 
 // Cloud Storage Sync Helpers
@@ -33,11 +53,10 @@ async function fetchCloudEscrows() {
     if (response.ok) {
       const text = await response.text();
       if (text && text.trim().startsWith('[')) {
-        const parsed = JSON.parse(text);
-        if (Array.isArray(parsed)) {
-          saveLocalEscrows(parsed);
-          return parsed;
-        }
+        let parsed = JSON.parse(text);
+        parsed = cleanEscrowsArray(parsed);
+        saveLocalEscrows(parsed);
+        return parsed;
       }
     }
   } catch (e) {
@@ -47,12 +66,13 @@ async function fetchCloudEscrows() {
 }
 
 async function syncCloudEscrows(escrows) {
-  saveLocalEscrows(escrows);
+  const cleaned = cleanEscrowsArray(escrows);
+  saveLocalEscrows(cleaned);
   try {
     await fetch(CLOUD_SYNC_ESCROWS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(escrows)
+      body: JSON.stringify(cleaned)
     });
   } catch (e) {
     console.warn("Cloud sync push error:", e);
