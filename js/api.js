@@ -6,19 +6,28 @@
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
-// Cloud Sync Endpoint (Fresh clean store v3 - 0 bounties)
-const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v3/escrows";
-const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v3/markets";
+// Cloud Sync Endpoint (v4 clean store - 0 demo bounties)
+const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v4/escrows";
+const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v4/markets";
 
-const DEFAULT_ESCROWS = [];
-
-// Helper to get local fallback escrows
+// Helper to get local fallback escrows (Purges any legacy demo bounties)
 function getLocalEscrows() {
   try {
     const data = localStorage.getItem('intellex_global_escrows');
     if (!data) return [];
-    const parsed = JSON.parse(data);
-    return Array.isArray(parsed) ? parsed : [];
+    let parsed = JSON.parse(data);
+    if (Array.isArray(parsed)) {
+      // Filter out any legacy pre-seeded demo escrows
+      parsed = parsed.filter(e => 
+        e.title !== "GenLayer Bradbury DEX Router Security Audit" && 
+        e.title !== "GenLayer Python SDK Async WebSocket Listener Bounty" &&
+        e.client !== "0xAliceClient" &&
+        e.client !== "0xDevinClient"
+      );
+      saveLocalEscrows(parsed);
+      return parsed;
+    }
+    return [];
   } catch (e) {
     return [];
   }
@@ -35,8 +44,15 @@ async function fetchCloudEscrows() {
     if (response.ok) {
       const text = await response.text();
       if (text && text.trim().startsWith('[')) {
-        const parsed = JSON.parse(text);
+        let parsed = JSON.parse(text);
         if (Array.isArray(parsed)) {
+          // Filter out legacy demo bounties
+          parsed = parsed.filter(e => 
+            e.title !== "GenLayer Bradbury DEX Router Security Audit" && 
+            e.title !== "GenLayer Python SDK Async WebSocket Listener Bounty" &&
+            e.client !== "0xAliceClient" &&
+            e.client !== "0xDevinClient"
+          );
           saveLocalEscrows(parsed);
           return parsed;
         }

@@ -989,3 +989,146 @@ textarea.form-control {
   color: #cbe3f7;
   white-space: pre;
 }
+
+/* MOBILE & RESPONSIVE DESIGN OPTIMIZATIONS */
+@media (max-width: 992px) {
+  .navbar {
+    padding: 0.85rem 1.25rem;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .main-content {
+    padding: 1.25rem 1rem;
+  }
+  .role-hero-banner {
+    padding: 1.25rem;
+  }
+  .network-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 0.85rem 1rem;
+  }
+
+  .brand {
+    justify-content: center;
+  }
+
+  .nav-links {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nav-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 0.82rem;
+  }
+
+  .nav-wallet {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .user-profile-badge {
+    padding: 4px 10px;
+  }
+
+  .role-hero-banner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+    padding: 1.25rem 1rem;
+  }
+
+  .role-hero-actions {
+    width: 100%;
+  }
+
+  .role-hero-actions .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-filter-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .search-box-wrapper {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .filter-chips {
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+
+  .filter-chip {
+    flex-shrink: 0;
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .network-stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-card {
+    padding: 1.25rem 1rem;
+    width: 95%;
+    max-height: 92vh;
+    border-radius: var(--radius-md);
+  }
+
+  .auth-card {
+    padding: 1.75rem 1.25rem;
+    max-width: 100%;
+  }
+
+  .role-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-title {
+    font-size: 1.35rem;
+  }
+  .hero-title {
+    font-size: 1.35rem;
+  }
+  .card-title {
+    font-size: 1.05rem;
+  }
+  .meta-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .action-btn, .secondary-btn {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    min-height: 44px;
+  }
+}
+
