@@ -6,23 +6,7 @@
 #   ]
 # }
 
-try:
-    from genlayer import *
-except ImportError:
-    class gl:
-        class Contract: pass
-        class message:
-            sender_address = "0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33"
-        class public:
-            @staticmethod
-            def view(fn): return fn
-            @staticmethod
-            def write(fn): return fn
-    class Address(str): pass
-    class u256(int): pass
-    class TreeMap(dict): pass
-    def allow_storage(cls): return cls
-
+from genlayer import *
 from dataclasses import dataclass
 
 
@@ -52,11 +36,10 @@ class IntelligentEscrow(gl.Contract):
     next_escrow_id: u256
 
     def __init__(self):
-        self.escrows = TreeMap()
         self.next_escrow_id = u256(1)
 
     # =========================================================
-    # CREATE ESCROW
+    # CREATE ESCROW VAULT (CLIENT / BUYER)
     # =========================================================
 
     @gl.public.write
@@ -107,7 +90,7 @@ class IntelligentEscrow(gl.Contract):
         return escrow_id
 
     # =========================================================
-    # CLAIM ESCROW
+    # CLAIM ESCROW TASK (BUILDER / CONTRACTOR)
     # =========================================================
 
     @gl.public.write
@@ -125,7 +108,7 @@ class IntelligentEscrow(gl.Contract):
         escrow.status = "ACTIVE"
 
     # =========================================================
-    # SUBMIT DELIVERABLE
+    # SUBMIT WORK DELIVERABLE (BUILDER)
     # =========================================================
 
     @gl.public.write
@@ -152,7 +135,7 @@ class IntelligentEscrow(gl.Contract):
         escrow.status = "SUBMITTED"
 
     # =========================================================
-    # ARBITRATION & GENLAYER CONSENSUS
+    # AI TASK ARBITRATION & PAYMENT DISBURSEMENT
     # =========================================================
 
     @gl.public.write
@@ -179,7 +162,7 @@ class IntelligentEscrow(gl.Contract):
 
         def evaluate():
             prompt = f"""
-You are an impartial GenLayer Validator evaluating milestone deliverables.
+You are an impartial GenLayer Consensus Validator evaluating task deliverables.
 
 PROJECT TITLE:
 {title}
@@ -199,7 +182,7 @@ DELIVERABLE URL:
 CONTRACTOR SUBMISSION NOTES:
 {deliverable_notes}
 
-Determine whether the contractor completed the requirements.
+Determine whether the contractor successfully fulfilled requirements.
 
 Return ONLY JSON:
 {{
@@ -208,7 +191,7 @@ Return ONLY JSON:
 }}
 
 The score must be an integer between 0 and 100.
-Rule: ACCEPT only if score >= {threshold} and requirements are fulfilled.
+Rule: ACCEPT only if score >= {threshold} and requirements are satisfied.
 """
             return gl.nondet.exec_prompt(
                 prompt,
@@ -232,7 +215,7 @@ Rule: ACCEPT only if score >= {threshold} and requirements are fulfilled.
                 return False
 
             validator_prompt = f"""
-You are an independent validator verifying milestone completion on GenLayer.
+You are an independent validator verifying task completion on GenLayer.
 
 PROJECT TITLE:
 {title}
@@ -292,7 +275,7 @@ Independently verify whether the deliverable meets requirements.
         return result["decision"]
 
     # =========================================================
-    # VIEWS
+    # READ VIEWS
     # =========================================================
 
     @gl.public.view
