@@ -152,8 +152,8 @@ The evidence hash and validator consensus logs are stored permanently on-chain f
 
 ## 📡 Live Contract Addresses (GenLayer Bradbury)
 
-* **IntelligentEscrow Contract**: `0x16905a5cfC1C2c002c354eA83550c5259A961a15`
-* **TruthForgeOracle Contract**: `0xAB923beD299513e13a7B6D507Dc00df1b512CaA7`
+* **IntelligentEscrow Contract**: `0x3Fc6Ba2C953Bdc8d80AFd1599B9EE245C0761827`
+* **TruthForgeOracle Contract**: `0xF4137609FEa2259a2ea1814D540a3c7a8b4fdD6F`
 * **GenLayer Studio Explorer**: [https://studio.genlayer.com](https://studio.genlayer.com)
 
 ---
