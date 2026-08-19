@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- SCREEN 1: INITIAL LOGIN & SIGN UP PAGE (CLEAN / NO PRE-FILLED DEMO ACCOUNTS) -->
+  <!-- SCREEN 1: INITIAL LOGIN & SIGN UP PAGE -->
   <div class="app-screen active" id="login-screen">
     <div class="auth-container">
       <div class="auth-card">
@@ -50,7 +50,7 @@
           </button>
         </form>
 
-        <!-- FORM 2: CREATE NEW ACCOUNT -->
+        <!-- FORM 2: CREATE NEW ACCOUNT (PREVENTS DUPLICATE EMAILS) -->
         <form id="auth-signup-form" style="display:none;">
           <div class="form-group">
             <label class="form-label">Full Name</label>
@@ -152,7 +152,7 @@
         </button>
       </nav>
 
-      <!-- Network, Theme Toggle, Profile Badge (Faucet Removed) -->
+      <!-- Network, Theme Toggle, Profile Badge, Logout -->
       <div class="nav-wallet">
         <div class="user-profile-badge" id="switch-role-nav-btn" title="Click to Switch Active Role">
           <div>
@@ -168,6 +168,10 @@
         <div class="network-badge">
           <span>GenLayer Bradbury</span>
         </div>
+
+        <button class="secondary-btn btn-sm" id="logout-btn" style="padding:6px 12px;font-size:0.8rem;border-color:var(--border-subtle);">
+          Log Out
+        </button>
       </div>
     </header>
 
@@ -202,12 +206,18 @@
             <div class="stat-value neon" id="stat-deployed-escrow" style="font-size:0.88rem;">
               <a href="https://studio.genlayer.com/contract/0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec" target="_blank" style="color:var(--primary);text-decoration:underline;">0xc40d...20Ec</a>
             </div>
+            <button class="secondary-btn btn-sm" onclick="window.copyContractAddress('0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec')" style="margin-top:6px;font-size:0.7rem;padding:2px 8px;">
+              Copy Address
+            </button>
           </div>
           <div class="stat-item">
             <span class="stat-label">Oracle Contract Address</span>
             <div class="stat-value neon" id="stat-deployed-oracle" style="font-size:0.88rem;">
               <a href="https://studio.genlayer.com/contract/0x503402BF6Ccadf366D269FE397B79c2CFfF011AC" target="_blank" style="color:var(--primary);text-decoration:underline;">0x5034...11AC</a>
             </div>
+            <button class="secondary-btn btn-sm" onclick="window.copyContractAddress('0x503402BF6Ccadf366D269FE397B79c2CFfF011AC')" style="margin-top:6px;font-size:0.7rem;padding:2px 8px;">
+              Copy Address
+            </button>
           </div>
           <div class="stat-item">
             <span class="stat-label">Active Committee Validators</span>
@@ -292,13 +302,25 @@
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- MODAL 1: CREATE ESCROW (CLIENT DEPOSIT & RECEIPT ACKNOWLEDGMENT) -->
+    <!-- MODAL 1: CREATE ESCROW (WITH CONTRACT COPY ADDRESS OPTION) -->
     <div class="modal-overlay" id="create-escrow-modal">
       <div class="modal-card">
         <div class="modal-header">
           <h3 class="modal-title">Deploy Escrow &amp; Deposit Payment</h3>
           <button class="close-btn" onclick="window.closeModals()">&times;</button>
         </div>
+
+        <!-- Copy Escrow Contract Address Box -->
+        <div style="background:var(--bg-glass);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div>
+            <div style="font-size:0.75rem;color:var(--text-muted);">GenLayer Intelligent Escrow Contract Address</div>
+            <div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--primary);font-weight:600;word-break:break-all;">0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec</div>
+          </div>
+          <button type="button" class="action-btn btn-sm" onclick="window.copyContractAddress('0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec')" style="white-space:nowrap;font-size:0.75rem;padding:6px 12px;">
+            Copy Contract Address
+          </button>
+        </div>
+
         <form id="create-escrow-form">
           <div class="form-group">
             <label class="form-label">Task Title</label>
@@ -347,7 +369,7 @@
 
           <!-- Deposit Confirmation Notice -->
           <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);margin-bottom:1rem;font-size:0.82rem;color:var(--text-main);">
-            <strong>Client Deposit Notice:</strong> Upon submitting, the specified GEN amount will be transferred to the Intelligent Escrow Contract on GenLayer Bradbury. The contract will issue an automated payment confirmation receipt confirming funds are locked until AI task verification completes.
+            <strong>Client Deposit Notice:</strong> Send the deposit amount directly to the contract address above. Upon submitting, funds are received and locked in the vault until AI task verification completes.
           </div>
 
           <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:0.5rem;">

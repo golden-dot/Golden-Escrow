@@ -11,6 +11,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const ESCROW_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ESCROW_CONTRACT}`;
   const ORACLE_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ORACLE_CONTRACT}`;
 
+  // Registered Accounts Repository (Prevents Duplicate Email Registrations)
+  let registeredAccounts = [];
+  try {
+    registeredAccounts = JSON.parse(localStorage.getItem('intellex_registered_accounts')) || [];
+  } catch (e) {
+    registeredAccounts = [];
+  }
+
+  function saveRegisteredAccounts() {
+    localStorage.setItem('intellex_registered_accounts', JSON.stringify(registeredAccounts));
+  }
+
   // Theme Management
   const themeToggleBtn = document.getElementById('theme-toggle');
   const themeText = document.getElementById('theme-text');
@@ -40,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentScreen: 'login',
     currentRole: localStorage.getItem('intellex_role') || 'client',
     currentUsername: localStorage.getItem('intellex_username') || '',
+    currentEmail: localStorage.getItem('intellex_email') || '',
     currentWallet: localStorage.getItem('intellex_wallet') || '',
     escrows: [],
     markets: [],
@@ -48,6 +61,20 @@ document.addEventListener('DOMContentLoaded', () => {
     activeFilter: 'all',
     selectedContractCode: 'IntelligentEscrow',
     activePayoutEscrowId: null
+  };
+
+  // 1-Click Contract Address Copy Helper
+  window.copyContractAddress = (address) => {
+    const targetAddr = address || DEPLOYED_ESCROW_CONTRACT;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(targetAddr).then(() => {
+        showToast(`Copied contract address: ${targetAddr.slice(0,6)}...${targetAddr.slice(-4)}`, 'success');
+      }).catch(() => {
+        showToast(`Contract address: ${targetAddr}`, 'info');
+      });
+    } else {
+      showToast(`Contract address: ${targetAddr}`, 'info');
+    }
   };
 
   // Screen Switcher Helper (Handles role-selection-screen, login-screen, dashboard-screen)
@@ -83,6 +110,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 4000);
   }
 
+  // LOGOUT BUTTON HANDLER
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('intellex_username');
+      localStorage.removeItem('intellex_role');
+      localStorage.removeItem('intellex_email');
+
+      state.currentUsername = '';
+      state.currentEmail = '';
+      state.currentRole = 'client';
+
+      showToast('Logged out successfully', 'info');
+      showScreen('login');
+    });
+  }
+
   // SCREEN 1: AUTH TAB SWITCHER (LOG IN VS CREATE ACCOUNT)
   window.switchAuthTab = (tab) => {
     const loginBtn = document.getElementById('auth-tab-login');
@@ -103,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // AUTH FORM 1: LOG IN
+  // AUTH FORM 1: LOG IN TO EXISTING ACCOUNT
   const loginForm = document.getElementById('auth-login-form');
   const loginSubmitBtn = document.getElementById('login-submit-btn');
 
@@ -129,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         state.currentUsername = identifier.includes('@') ? identifier.split('@')[0] : identifier;
+        state.currentEmail = identifier.includes('@') ? identifier.toLowerCase() : `${identifier.toLowerCase()}@user.io`;
 
         showToast(`Authenticated as ${state.currentUsername}`, 'success');
         showScreen('role');
@@ -136,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // AUTH FORM 2: CREATE NEW ACCOUNT
+  // AUTH FORM 2: CREATE NEW ACCOUNT (CHECKS DUPLICATE EMAILS)
   const signupForm = document.getElementById('auth-signup-form');
   const signupSubmitBtn = document.getElementById('signup-submit-btn');
 
@@ -144,10 +189,17 @@ document.addEventListener('DOMContentLoaded', () => {
     signupForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const fullName = document.getElementById('signup-fullname').value.trim();
-      const email = document.getElementById('signup-email').value.trim();
+      const email = document.getElementById('signup-email').value.trim().toLowerCase();
 
       if (!email) {
         showToast('Please enter a valid email address', 'danger');
+        return;
+      }
+
+      // Check if email already exists in registered accounts repository
+      const existingAccount = registeredAccounts.find(acc => acc.email === email);
+      if (existingAccount) {
+        showToast('An account with this email already exists. Please log in instead.', 'danger');
         return;
       }
 
@@ -162,7 +214,16 @@ document.addEventListener('DOMContentLoaded', () => {
           signupSubmitBtn.disabled = false;
         }
 
-        state.currentUsername = fullName || email.split('@')[0];
+        const username = fullName || email.split('@')[0];
+        registeredAccounts.push({
+          email: email,
+          name: username,
+          createdAt: new Date().toISOString()
+        });
+        saveRegisteredAccounts();
+
+        state.currentUsername = username;
+        state.currentEmail = email;
 
         showToast(`Account created successfully for ${state.currentUsername}!`, 'success');
         showScreen('role');
@@ -193,6 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         localStorage.setItem('intellex_role', state.currentRole);
         localStorage.setItem('intellex_username', state.currentUsername);
+        localStorage.setItem('intellex_email', state.currentEmail);
 
         updateRoleUI();
         showScreen('dashboard');
