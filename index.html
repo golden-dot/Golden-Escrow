@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GenLayer Intellex Protocol | Autonomous AI Escrow & Truth Oracle</title>
+  <meta name="description" content="Decentralized Intelligent Escrow and Multi-Source Truth Oracle powered by GenLayer GenVM and Optimistic Democracy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- SCREEN 1: DEDICATED INITIAL LOGIN PAGE -->
+  <div class="app-screen active" id="login-screen">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="auth-logo-icon">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1>INTELLEX</h1>
+            <span>GenLayer Protocol</span>
+          </div>
+        </div>
+
+        <h2 class="auth-title">Sign In to Intellex</h2>
+        <p class="auth-subtitle">Autonomous AI-Governed Escrow &amp; Intelligent Contracts</p>
+
+        <form id="auth-login-form">
+          <div class="form-group">
+            <label class="form-label">Email or Wallet Address</label>
+            <input type="text" class="form-control" id="login-identifier" value="alice@genlayer.io" placeholder="name@domain.com or 0x..." required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Security Key / Password</label>
+            <input type="password" class="form-control" id="login-password" value="••••••••••••" required>
+          </div>
+
+          <button type="submit" class="action-btn" id="login-submit-btn" style="width:100%;margin-top:1.25rem;padding:12px;font-size:0.95rem;">
+            Sign In &amp; Continue
+          </button>
+        </form>
+
+        <div style="margin-top:1.5rem;text-align:center;font-size:0.8rem;color:var(--text-dim);">
+          Demo Account pre-filled. Click Sign In to proceed.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: POST-LOGIN ROLE SELECTION PAGE -->
+  <div class="app-screen" id="role-selection-screen">
+    <div class="role-screen-container">
+      <div class="role-header">
+        <h2>What do you want to do on Intellex?</h2>
+        <p>Select your primary objective on the GenLayer Intelligent Escrow Platform.</p>
+      </div>
+
+      <div class="role-grid">
+        <!-- Option A: Builder / Contractor -->
+        <div class="role-card-option selected" id="role-card-builder" data-role="builder">
+          <span class="role-tag-badge">BUILDER / CONTRACTOR</span>
+          <h3>I want to Build &amp; Claim Bounties</h3>
+          <p>Search active tasks, claim community bounties, submit deliverable PRs, and receive instant payments verified by GenVM AI consensus.</p>
+        </div>
+
+        <!-- Option B: Client / Buyer -->
+        <div class="role-card-option" id="role-card-client" data-role="client">
+          <span class="role-tag-badge">CLIENT / BUYER</span>
+          <h3>I want to Create &amp; Fund Escrow Vaults</h3>
+          <p>Post tasks, define strict LLM acceptance criteria, fund escrow vaults, and let GenLayer automatically verify contractor work.</p>
+        </div>
+
+        <!-- Option C: DAO Arbiter -->
+        <div class="role-card-option" id="role-card-dao" data-role="dao">
+          <span class="role-tag-badge">DAO ARBITER</span>
+          <h3>I want to Participate in Governance</h3>
+          <p>Stake GEN tokens in committee validator pools, monitor equivalence consensus, and resolve disputed verification rounds.</p>
+        </div>
+
+        <!-- Option D: Oracle Predictor -->
+        <div class="role-card-option" id="role-card-predictor" data-role="predictor">
+          <span class="role-tag-badge">ORACLE PREDICTOR</span>
+          <h3>I want to Trade Prediction Markets</h3>
+          <p>Stake on real-world factual claims verified by automated multi-source web crawlers and GenLayer consensus.</p>
+        </div>
+      </div>
+
+      <button class="action-btn" id="confirm-role-btn" style="padding:14px 40px;font-size:1rem;min-width:280px;">
+        Launch Platform Dashboard
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: MAIN ESCROW PLATFORM DASHBOARD -->
+  <div class="app-screen" id="dashboard-screen">
+    <!-- Navbar -->
+    <header class="navbar">
+      <a href="#" class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>INTELLEX</h1>
+          <span>GenLayer Protocol</span>
+        </div>
+      </a>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-links">
+        <button class="nav-tab active" data-tab="escrows">
+          Intelligent Escrow
+        </button>
+        <button class="nav-tab" data-tab="oracle">
+          TruthForge Oracle
+        </button>
+        <button class="nav-tab" data-tab="contracts">
+          Intelligent Contracts
+        </button>
+      </nav>
+
+      <!-- Network, Theme Toggle, Profile Badge -->
+      <div class="nav-wallet">
+        <div class="user-profile-badge" id="switch-role-nav-btn" title="Click to Switch Active Role">
+          <div>
+            <div id="nav-user-name" style="font-size:0.82rem;font-weight:700;line-height:1.2;">Alice</div>
+            <div class="role-pill" id="nav-user-role">CLIENT</div>
+          </div>
+        </div>
+
+        <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme">
+          Theme: <span id="theme-text">Dark</span>
+        </button>
+
+        <div class="network-badge">
+          <span>StudioNet</span>
+        </div>
+
+        <button class="faucet-btn" id="faucet-btn">+ Faucet 500 GEN</button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Role Welcome Header -->
+      <section class="role-hero-banner" id="personalized-role-banner">
+        <div class="role-hero-left">
+          <h3 id="role-welcome-title">Welcome to Intellex Protocol</h3>
+          <p id="role-welcome-desc">Operating on GenLayer StudioNet with autonomous AI verification.</p>
+        </div>
+        <div class="role-hero-actions">
+          <button class="action-btn" id="role-primary-action-btn">
+            + Deploy New Escrow Vault
+          </button>
+          <button class="secondary-btn" id="switch-role-hero-btn">
+            Switch Role
+          </button>
+        </div>
+      </section>
+
+      <!-- Network Telemetry -->
+      <section class="hero-banner">
+        <h2 class="hero-title">Autonomous AI-Governed Escrow &amp; <span class="highlight">Intelligent Contracts</span></h2>
+        <p class="hero-desc">
+          Execute milestone-based agreements and prediction markets with zero human intermediary delay. GenLayer Intelligent Contracts run LLM reasoning and real-time web scrapers directly inside GenVM, verified via Optimistic Democracy consensus.
+        </p>
+
+        <div class="network-stats-row">
+          <div class="stat-item">
+            <span class="stat-label">Escrow Contract Address</span>
+            <div class="stat-value neon" id="stat-deployed-escrow" style="font-size:0.88rem;">
+              <a href="https://studio.genlayer.com/contract/0xd0C596531ea0653Def4AAb200a9B8A3686bed552" target="_blank" style="color:var(--primary);text-decoration:underline;">0xd0C5...d552</a>
+            </div>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Oracle Contract Address</span>
+            <div class="stat-value neon" id="stat-deployed-oracle" style="font-size:0.88rem;">
+              <a href="https://studio.genlayer.com/contract/0xF19639Fcc392219334E0F6009001038fe98f2868" target="_blank" style="color:var(--primary);text-decoration:underline;">0xF196...2868</a>
+            </div>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Active Committee Validators</span>
+            <div class="stat-value neon" id="stat-validators">5 Nodes</div>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Total Staked Value</span>
+            <div class="stat-value" id="stat-staked">194,000 GEN</div>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Connected Wallet Vault</span>
+            <div class="stat-value neon" id="wallet-balance">5,000.0 GEN</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 1: INTELLIGENT ESCROW -->
+      <section class="tab-content active" id="escrows-tab">
+        <div class="section-header">
+          <div class="section-title">
+            Escrow Marketplace &amp; Tasks
+          </div>
+          <button class="action-btn" id="open-create-escrow-btn">
+            + Deploy New Escrow
+          </button>
+        </div>
+
+        <div class="search-filter-section">
+          <div class="search-box-wrapper">
+            <input type="text" class="search-input" id="escrow-search-input" placeholder="Search tasks by title, category, requirements, or wallet address...">
+          </div>
+
+          <div class="filter-chips">
+            <button class="filter-chip active" data-filter="all">All Tasks (<span id="count-all">0</span>)</button>
+            <button class="filter-chip" data-filter="open">Open to Claim (<span id="count-open">0</span>)</button>
+            <button class="filter-chip" data-filter="my-jobs">My Tasks (<span id="count-my">0</span>)</button>
+            <button class="filter-chip" data-filter="completed">Verified (<span id="count-completed">0</span>)</button>
+          </div>
+        </div>
+
+        <div class="cards-grid" id="escrows-list">
+          <!-- Dynamic Cards -->
+        </div>
+      </section>
+
+      <!-- TAB 2: TRUTHFORGE ORACLE -->
+      <section class="tab-content" id="oracle-tab">
+        <div class="section-header">
+          <div class="section-title">
+            TruthForge Autonomous Prediction Markets
+          </div>
+          <button class="action-btn" id="open-create-market-btn">
+            + Create Truth Market
+          </button>
+        </div>
+
+        <div class="cards-grid" id="markets-list">
+          <!-- Dynamic Markets -->
+        </div>
+      </section>
+
+      <!-- TAB 3: INTELLIGENT CONTRACTS INSPECTOR -->
+      <section class="tab-content" id="contracts-tab">
+        <div class="section-header">
+          <div class="section-title">
+            GenLayer Intelligent Contracts Explorer
+          </div>
+          <span style="font-size:0.85rem;color:var(--text-muted);">
+            Real GenVM Python Contracts for GenLayer Studio v0.2.16
+          </span>
+        </div>
+
+        <div class="code-viewer-container">
+          <div class="code-header">
+            <div class="code-tabs">
+              <button class="code-tab-btn active" data-contract="IntelligentEscrow">IntelligentEscrow.py</button>
+              <button class="code-tab-btn" data-contract="TruthForgeOracle">TruthForgeOracle.py</button>
+            </div>
+            <span style="font-size:0.75rem;font-family:var(--font-mono);color:var(--primary);">Python 3.14 / GenVM 0.2.16</span>
+          </div>
+          <pre class="code-body" id="contract-code-body"></pre>
+        </div>
+      </section>
+    </main>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- MODAL 1: CREATE ESCROW -->
+    <div class="modal-overlay" id="create-escrow-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Deploy Intelligent Escrow Vault</h3>
+          <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+        <form id="create-escrow-form">
+          <div class="form-group">
+            <label class="form-label">Task Title</label>
+            <input type="text" class="form-control" id="escrow-title" placeholder="e.g. Smart Contract Security Audit" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-control" id="escrow-category">
+              <option value="Smart Contract Security">Smart Contract Security</option>
+              <option value="SDK & Developer Tooling" selected>SDK & Developer Tooling</option>
+              <option value="Design & UI/UX">Design & UI/UX</option>
+              <option value="AI Agents & GenVM">AI Agents & GenVM</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Project Description</label>
+            <textarea class="form-control" id="escrow-desc" placeholder="Summary of required deliverable and objectives..." required></textarea>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-group">
+              <label class="form-label">Assignment</label>
+              <select class="form-control" id="escrow-assignment-mode">
+                <option value="open">Open Community Task (Anyone can claim)</option>
+                <option value="assigned">Specific Contractor Wallet</option>
+              </select>
+            </div>
+            <div class="form-group" id="contractor-input-wrapper" style="display:none;">
+              <label class="form-label">Contractor Wallet Address</label>
+              <input type="text" class="form-control" id="escrow-contractor" value="0xBob791C2DeB8b7F498616142718E84e50882e308">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Vault Amount (GEN)</label>
+              <input type="number" class="form-control" id="escrow-amount" value="500" min="10" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Task Requirements</label>
+            <input type="text" class="form-control" id="escrow-requirements" value="Deliver functional modular codebase with unit tests." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">AI Acceptance Criteria</label>
+            <textarea class="form-control" id="escrow-criteria" rows="3" required>Test coverage >= 85%
+Zero unhandled runtime exceptions
+Code includes comprehensive documentation</textarea>
+          </div>
+
+          <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:1rem;">
+            Deploy Escrow on GenLayer
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 2: SUBMIT DELIVERABLE -->
+    <div class="modal-overlay" id="submit-deliverable-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Submit Deliverable for AI Verification</h3>
+          <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+        <form id="submit-deliverable-form">
+          <div class="form-group">
+            <label class="form-label">Deliverable URL (GitHub / Figma / Docs)</label>
+            <input type="url" class="form-control" id="deliv-url" placeholder="https://github.com/myorg/project-repo" value="https://github.com/genlayer/audit-router-deliverable" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contractor Submission Notes</label>
+            <textarea class="form-control" id="deliv-notes" rows="4" placeholder="Detail how requirements were fulfilled..." required>Completed the core implementation, added automated unit tests, and verified zero regressions across all modules.</textarea>
+          </div>
+          <button type="submit" class="action-btn" id="submit-deliv-btn" style="width:100%;margin-top:1rem;">
+            Submit to Intelligent Contract
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 3: GENVM AI ARBITRATION VISUALIZER WITH SPINNER -->
+    <div class="modal-overlay" id="ai-arbitration-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">GenVM AI Arbitration in Progress</h3>
+          <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;">
+          <div class="spinner"></div>
+          <p style="font-size:0.88rem;color:var(--text-muted);margin:0;">
+            Executing decentralized non-deterministic verification across GenLayer committee validators.
+          </p>
+        </div>
+
+        <div class="genvm-execution-flow">
+          <div class="step-row" id="step-1">
+            <div class="step-icon">1</div>
+            <div class="step-info">
+              <h4>Committee Selection</h4>
+              <p>5 Staked Validator Nodes appointed for consensus round</p>
+            </div>
+          </div>
+          <div class="step-row" id="step-2">
+            <div class="step-icon">2</div>
+            <div class="step-info">
+              <h4>Non-Deterministic Web Ingestion</h4>
+              <p>Executing gl.nondet.web.render() on submitted deliverable snapshot</p>
+            </div>
+          </div>
+          <div class="step-row" id="step-3">
+            <div class="step-icon">3</div>
+            <div class="step-info">
+              <h4>LLM Reasoning &amp; Rubric Scoring</h4>
+              <p>Executing gl.nondet.exec_prompt() against milestone acceptance criteria</p>
+            </div>
+          </div>
+          <div class="step-row" id="step-4">
+            <div class="step-icon">4</div>
+            <div class="step-info">
+              <h4>Equivalence Principle Consensus</h4>
+              <p>Aggregating BLS validator signatures &amp; verifying non-comparative consensus</p>
+            </div>
+          </div>
+          <div class="step-row" id="step-5">
+            <div class="step-icon">5</div>
+            <div class="step-info">
+              <h4>Autonomous Payout &amp; State Finalization</h4>
+              <p>Disbursing locked escrow vault funds to contractor wallet</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="arbitration-status-text" style="font-family:var(--font-mono);font-size:0.82rem;color:var(--primary);text-align:center;padding:10px;background:rgba(var(--primary-rgb), 0.08);border-radius:var(--radius-sm);border:1px solid rgba(var(--primary-rgb), 0.2);">
+          Initializing GenVM Execution Environment...
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 4: RESOLUTION REPORT -->
+    <div class="modal-overlay" id="resolution-details-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">GenLayer AI Verification Report</h3>
+          <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+        <div id="report-modal-body">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 5: STAKE ON MARKET -->
+    <div class="modal-overlay" id="stake-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Stake on Outcome</h3>
+          <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+        <form id="stake-form">
+          <div style="font-size:1.1rem;margin-bottom:1rem;">
+            Staking on: <span id="stake-side-indicator" style="font-weight:700;">YES</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stake Amount (GEN)</label>
+            <input type="number" class="form-control" id="stake-amount" value="50" min="1" required>
+          </div>
+          <button type="submit" class="action-btn" id="stake-submit-btn" style="width:100%;margin-top:1rem;">
+            Confirm Stake
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 6: CREATE MARKET -->
+    <div class="modal-overlay" id="create-market-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Create TruthForge Oracle Market</h3>
+          <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+        <form id="create-market-form">
+          <div class="form-group">
+            <label class="form-label">Market Question / Claim</label>
+            <input type="text" class="form-control" id="market-question" placeholder="e.g. Did Ethereum gas drop below 5 gwei on August 15, 2026?" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <input type="text" class="form-control" id="market-category" value="Crypto & Web3" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Resolution Criteria</label>
+            <textarea class="form-control" id="market-criteria" rows="2" placeholder="Exact conditions under which outcome is YES vs NO..." required>Resolves YES if public on-chain gas tracker confirms average gas price was under 5 gwei.</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Verified Resolution Sources (URLs, 1 per line)</label>
+            <textarea class="form-control" id="market-sources" rows="3" required>https://etherscan.io/gastracker
+https://ultrasound.money</textarea>
+          </div>
+          <button type="submit" class="action-btn" style="width:100%;margin-top:1rem;">
+            Deploy Truth Market
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/contracts_code.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
