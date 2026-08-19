@@ -127,19 +127,34 @@
 
   <!-- SCREEN 3: MAIN ESCROW PLATFORM DASHBOARD -->
   <div class="app-screen" id="dashboard-screen">
-    <!-- Navbar -->
+    <!-- Navbar (Optimized for Mobile & Desktop) -->
     <header class="navbar">
-      <a href="#" class="brand">
-        <div class="brand-logo">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
+      <div class="navbar-header-top">
+        <a href="#" class="brand">
+          <div class="brand-logo">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1>INTELLEX</h1>
+            <span>GenLayer Bradbury</span>
+          </div>
+        </a>
+
+        <div class="header-mobile-right">
+          <div class="user-profile-badge" id="nav-profile-badge">
+            <div>
+              <div id="nav-user-name" style="font-size:0.82rem;font-weight:700;line-height:1.2;">User</div>
+              <div class="role-pill" id="nav-user-role">CLIENT</div>
+            </div>
+          </div>
+
+          <button class="secondary-btn btn-sm" id="logout-btn" style="padding:6px 12px;font-size:0.8rem;border-color:var(--border-subtle);">
+            Log Out
+          </button>
         </div>
-        <div class="brand-text">
-          <h1>INTELLEX</h1>
-          <span>GenLayer Bradbury</span>
-        </div>
-      </a>
+      </div>
 
       <!-- Navigation Tabs -->
       <nav class="nav-links">
@@ -151,25 +166,14 @@
         </button>
       </nav>
 
-      <!-- Network, Theme Toggle, Profile Badge, Logout -->
+      <!-- Sub Telemetry / Network Bar -->
       <div class="nav-wallet">
-        <div class="user-profile-badge" id="nav-profile-badge">
-          <div>
-            <div id="nav-user-name" style="font-size:0.82rem;font-weight:700;line-height:1.2;">User</div>
-            <div class="role-pill" id="nav-user-role">CLIENT</div>
-          </div>
-        </div>
-
-        <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme">
-          Theme: <span id="theme-text">Dark</span>
-        </button>
-
         <div class="network-badge">
           <span>GenLayer Bradbury</span>
         </div>
 
-        <button class="secondary-btn btn-sm" id="logout-btn" style="padding:6px 12px;font-size:0.8rem;border-color:var(--border-subtle);">
-          Log Out
+        <button class="theme-toggle-btn" id="theme-toggle" title="Toggle Theme">
+          Theme: <span id="theme-text">Dark</span>
         </button>
       </div>
     </header>
