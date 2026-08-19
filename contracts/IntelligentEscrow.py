@@ -1,267 +1,326 @@
-# { "Depends": "py-genlayer:0.1.0" }
-"""
-IntelligentEscrow.py - GenLayer Intelligent Contract
-Autonomous AI-Governed Escrow with Non-Deterministic Milestone Verification
-"""
-from typing import Dict, List, Optional
-import json
+# v0.2.16
+#
+# {
+#   "Seq": [
+#     { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+#   ]
+# }
 
-class IntelligentEscrow:
-    """
-    GenLayer Intelligent Contract that holds funds in escrow and autonomously
-    evaluates subjective/technical milestones using GenVM LLM reasoning and web scrapers.
-    """
-    
+from genlayer import *
+from dataclasses import dataclass
+
+
+@allow_storage
+@dataclass
+class Escrow:
+    escrow_id: u256
+    client: Address
+    contractor: Address
+    title: str
+    description: str
+    category: str
+    requirements: str
+    criteria: str
+    amount: u256
+    quality_threshold: u256
+    deliverable_url: str
+    deliverable_notes: str
+    status: str
+    decision: str
+    score: u256
+
+
+class IntelligentEscrow(gl.Contract):
+
+    escrows: TreeMap[u256, Escrow]
+    next_escrow_id: u256
+
     def __init__(self):
-        # Persistent contract state
-        self.escrows = {}  # escrow_id -> Escrow details
-        self.escrow_counter = 0
-        self.platform_fee_bps = 50  # 0.5%
-        self.owner = "0xGenLayerGovernance00000000000000000000"
+        self.next_escrow_id = u256(1)
 
-    # -------------------------------------------------------------
-    # Public View Methods
-    # -------------------------------------------------------------
-    def get_escrow(self, escrow_id: int) -> dict:
-        """Returns details of a specific escrow."""
-        if escrow_id not in self.escrows:
-            return {"error": "Escrow not found"}
-        return self.escrows[escrow_id]
+    # =========================================================
+    # CREATE ESCROW
+    # =========================================================
 
-    def get_all_escrows(self) -> list:
-        """Returns all escrows in storage."""
-        return list(self.escrows.values())
-
-    def get_milestone(self, escrow_id: int, milestone_index: int) -> dict:
-        """Returns a specific milestone for an escrow."""
-        escrow = self.escrows.get(escrow_id)
-        if not escrow or milestone_index >= len(escrow["milestones"]):
-            return {"error": "Milestone not found"}
-        return escrow["milestones"][milestone_index]
-
-    # -------------------------------------------------------------
-    # Public Write Methods
-    # -------------------------------------------------------------
+    @gl.public.write
     def create_escrow(
         self,
-        client: str,
-        contractor: str,
+        contractor: Address,
         title: str,
         description: str,
-        total_amount: float,
-        milestones: list,
-        category: str = "Software Development",
-        is_open_for_claim: bool = False
-    ) -> int:
-        """
-        Creates a new intelligent escrow with one or more milestones.
-        """
-        self.escrow_counter += 1
-        escrow_id = self.escrow_counter
+        category: str,
+        requirements: str,
+        criteria: str,
+        amount: u256,
+        quality_threshold: u256,
+    ) -> u256:
 
-        formatted_milestones = []
-        for i, m in enumerate(milestones):
-            formatted_milestones.append({
-                "index": i,
-                "title": m.get("title", f"Milestone #{i+1}"),
-                "description": m.get("description", ""),
-                "amount": float(m.get("amount", 0)),
-                "acceptance_criteria": m.get("acceptance_criteria", []),
-                "quality_threshold_score": int(m.get("quality_threshold_score", 75)),
-                "status": "PENDING",  # PENDING, SUBMITTED, IN_REVIEW, APPROVED, REJECTED, DISPUTED
-                "deliverable_url": "",
-                "deliverable_notes": "",
-                "submission_timestamp": 0,
-                "resolution": None
-            })
+        if not title:
+            raise Exception("Title cannot be empty")
 
-        self.escrows[escrow_id] = {
-            "id": escrow_id,
-            "title": title,
-            "description": description,
-            "category": category,
-            "client": client,
-            "contractor": contractor if contractor else "0x0000000000000000000000000000000000000000",
-            "is_open_for_claim": is_open_for_claim or (not contractor or contractor.startswith("0x0000")),
-            "total_amount": total_amount,
-            "funded_amount": total_amount,  # Funded on creation in payable mode
-            "status": "OPEN_FOR_CLAIM" if (not contractor or contractor.startswith("0x0000")) else "ACTIVE",
-            "created_at": 1771340000,
-            "milestones": formatted_milestones,
-            "total_payout_released": 0.0,
-            "dao_arbiters": ["0xElena45C89D91176b91E5a46B18D64a024A211f421a7"]
-        }
+        if not requirements:
+            raise Exception("Requirements cannot be empty")
+
+        if not criteria:
+            raise Exception("Criteria cannot be empty")
+
+        escrow_id = self.next_escrow_id
+        is_open = contractor == Address("0x0000000000000000000000000000000000000000")
+
+        self.escrows[escrow_id] = Escrow(
+            escrow_id=escrow_id,
+            client=gl.message.sender_address,
+            contractor=contractor,
+            title=title,
+            description=description,
+            category=category,
+            requirements=requirements,
+            criteria=criteria,
+            amount=amount,
+            quality_threshold=quality_threshold,
+            deliverable_url="",
+            deliverable_notes="",
+            status="OPEN_FOR_CLAIM" if is_open else "ACTIVE",
+            decision="",
+            score=u256(0),
+        )
+
+        self.next_escrow_id = escrow_id + u256(1)
 
         return escrow_id
 
-    def join_escrow(self, escrow_id: int, role: str, participant_address: str) -> dict:
-        """
-        Allows a contractor, buyer/client, or DAO arbiter to join or claim an escrow.
-        """
-        if escrow_id not in self.escrows:
-            return {"success": False, "error": "Escrow does not exist"}
+    # =========================================================
+    # CLAIM ESCROW
+    # =========================================================
+
+    @gl.public.write
+    def claim_escrow(
+        self,
+        escrow_id: u256,
+    ) -> None:
 
         escrow = self.escrows[escrow_id]
-        role = role.lower()
 
-        if role == "contractor":
-            if escrow["contractor"] != "0x0000000000000000000000000000000000000000" and escrow["contractor"].lower() != participant_address.lower():
-                return {"success": False, "error": "Escrow already has an assigned contractor"}
-            escrow["contractor"] = participant_address
-            escrow["is_open_for_claim"] = False
-            escrow["status"] = "ACTIVE"
-            return {"success": True, "message": f"Successfully claimed escrow as Contractor!", "escrow": escrow}
+        if escrow.status != "OPEN_FOR_CLAIM":
+            raise Exception("Escrow is not open for claim")
 
-        elif role == "dao" or role == "arbiter":
-            if participant_address not in escrow["dao_arbiters"]:
-                escrow["dao_arbiters"].append(participant_address)
-            return {"success": True, "message": f"Joined escrow governance as DAO Arbiter!", "escrow": escrow}
+        escrow.contractor = gl.message.sender_address
+        escrow.status = "ACTIVE"
 
-        elif role == "buyer" or role == "client":
-            escrow["client"] = participant_address
-            return {"success": True, "message": f"Assigned as Buyer / Client!", "escrow": escrow}
+    # =========================================================
+    # SUBMIT DELIVERABLE
+    # =========================================================
 
-        return {"success": False, "error": f"Invalid role {role}"}
-
+    @gl.public.write
     def submit_deliverable(
         self,
-        escrow_id: int,
-        milestone_index: int,
-        sender: str,
+        escrow_id: u256,
         deliverable_url: str,
-        deliverable_notes: str
-    ) -> dict:
-        """
-        Contractor submits deliverable link and notes.
-        """
-        if escrow_id not in self.escrows:
-            return {"success": False, "error": "Escrow does not exist"}
+        deliverable_notes: str,
+    ) -> None:
 
         escrow = self.escrows[escrow_id]
-        if sender.lower() != escrow["contractor"].lower() and sender.lower() != escrow["client"].lower():
-            # If escrow was open, assign sender as contractor on submission
-            if escrow["contractor"].startswith("0x0000"):
-                escrow["contractor"] = sender
-                escrow["is_open_for_claim"] = False
-            else:
-                return {"success": False, "error": "Only contractor or client can submit deliverables"}
 
-        if milestone_index >= len(escrow["milestones"]):
-            return {"success": False, "error": "Invalid milestone index"}
+        if escrow.status != "ACTIVE":
+            raise Exception("Escrow is not active")
 
-        milestone = escrow["milestones"][milestone_index]
-        if milestone["status"] == "APPROVED":
-            return {"success": False, "error": "Milestone already approved and disbursed"}
+        if gl.message.sender_address != escrow.contractor and gl.message.sender_address != escrow.client:
+            raise Exception("Only assigned contractor or client can submit deliverables")
 
-        milestone["deliverable_url"] = deliverable_url
-        milestone["deliverable_notes"] = deliverable_notes
-        milestone["status"] = "SUBMITTED"
-        milestone["submission_timestamp"] = 1771340100
+        if not deliverable_notes:
+            raise Exception("Deliverable notes cannot be empty")
 
-        return {"success": True, "message": "Deliverable submitted. Ready for GenLayer AI verification."}
+        escrow.deliverable_url = deliverable_url
+        escrow.deliverable_notes = deliverable_notes
+        escrow.status = "SUBMITTED"
 
-    # -------------------------------------------------------------
-    # Non-Deterministic AI Verification (GenVM Equivalence Principle)
-    # -------------------------------------------------------------
-    def verify_and_resolve_milestone(
+    # =========================================================
+    # ARBITRATION & GENLAYER CONSENSUS
+    # =========================================================
+
+    @gl.public.write
+    def arbitrate(
         self,
-        escrow_id: int,
-        milestone_index: int,
-        gl_runtime=None
-    ) -> dict:
-        """
-        Executes GenVM AI milestone verification.
-        """
-        if escrow_id not in self.escrows:
-            return {"success": False, "error": "Escrow does not exist"}
+        escrow_id: u256,
+    ) -> str:
 
         escrow = self.escrows[escrow_id]
-        if milestone_index >= len(escrow["milestones"]):
-            return {"success": False, "error": "Milestone does not exist"}
 
-        milestone = escrow["milestones"][milestone_index]
-        if milestone["status"] == "APPROVED":
-            return {"success": False, "error": "Milestone already completed"}
+        if escrow.status != "SUBMITTED":
+            raise Exception("Deliverable must be submitted before arbitration")
 
-        def evaluate_milestone_nondet(web_client, llm_client):
-            fetched_content = ""
-            if milestone["deliverable_url"]:
-                try:
-                    fetched_content = web_client.render(milestone["deliverable_url"])
-                except Exception as e:
-                    fetched_content = f"Web fetch notice: {str(e)}"
+        title = escrow.title
+        requirements = escrow.requirements
+        criteria = escrow.criteria
+        deliverable_url = escrow.deliverable_url
+        deliverable_notes = escrow.deliverable_notes
+        threshold = int(escrow.quality_threshold)
 
-            system_prompt = (
-                "You are an impartial GenLayer Consensus Validator and technical arbitrator. "
-                "Evaluate whether the submitted contractor deliverable satisfies the specified milestone criteria. "
-                "Return a JSON object with: 'verdict' ('APPROVED' or 'REJECTED'), 'score' (0-100), "
-                "'criteria_evaluation' (list of objects with 'criterion', 'passed' (bool), 'feedback'), "
-                "'summary_reasoning' (str), and 'suggested_improvements' (list of str)."
-            )
+        # -----------------------------------------------------
+        # LEADER EVALUATION
+        # -----------------------------------------------------
 
-            user_prompt = f"""
-Milestone Title: {milestone['title']}
-Milestone Description: {milestone['description']}
-Acceptance Criteria: {json.dumps(milestone['acceptance_criteria'])}
-Minimum Quality Score Required: {milestone['quality_threshold_score']}/100
+        def evaluate():
+            prompt = f"""
+You are an impartial GenLayer Validator evaluating milestone deliverables.
 
-Submitted Deliverable URL: {milestone['deliverable_url']}
-Submitted Contractor Notes: {milestone['deliverable_notes']}
-Web Page Content / Deliverable Snapshot:
-{fetched_content[:3000] if fetched_content else "No web snapshot available; evaluate based on submitted notes and code snippets."}
+PROJECT TITLE:
+{title}
+
+TASK REQUIREMENTS:
+{requirements}
+
+VALIDATION ACCEPTANCE CRITERIA:
+{criteria}
+
+MINIMUM QUALITY THRESHOLD:
+{threshold}/100
+
+DELIVERABLE URL:
+{deliverable_url}
+
+CONTRACTOR SUBMISSION NOTES:
+{deliverable_notes}
+
+Determine whether the contractor completed the requirements.
+
+Return ONLY JSON:
+{{
+    "decision": "ACCEPT" or "REJECT",
+    "score": 0
+}}
+
+The score must be an integer between 0 and 100.
+Rule: ACCEPT only if score >= {threshold} and requirements are fulfilled.
 """
-            llm_response = llm_client.exec_prompt(
-                prompt=user_prompt,
-                system_instruction=system_prompt,
-                response_format="json"
+            return gl.nondet.exec_prompt(
+                prompt,
+                response_format="json",
             )
-            return llm_response
 
-        if gl_runtime:
-            eval_result = gl_runtime.run_equivalence_principle(
-                fn=evaluate_milestone_nondet,
-                task_description=f"Escrow #{escrow_id} Milestone #{milestone_index} Verification"
+        # -----------------------------------------------------
+        # VALIDATOR INDEPENDENT VERIFICATION
+        # -----------------------------------------------------
+
+        def validate(leader_result):
+            leader = leader_result.calldata
+
+            decision = leader.get("decision")
+            score = leader.get("score")
+
+            if decision not in ["ACCEPT", "REJECT"]:
+                return False
+
+            if not isinstance(score, int) or score < 0 or score > 100:
+                return False
+
+            validator_prompt = f"""
+You are an independent validator verifying milestone completion on GenLayer.
+
+PROJECT TITLE:
+{title}
+
+TASK REQUIREMENTS:
+{requirements}
+
+VALIDATION CRITERIA:
+{criteria}
+
+DELIVERABLE URL:
+{deliverable_url}
+
+CONTRACTOR NOTES:
+{deliverable_notes}
+
+LEADER DECISION:
+{decision}
+
+LEADER SCORE:
+{score}
+
+Return ONLY JSON:
+{{
+    "decision": "ACCEPT" or "REJECT"
+}}
+
+Independently verify whether the deliverable meets requirements.
+"""
+            validator = gl.nondet.exec_prompt(
+                validator_prompt,
+                response_format="json",
             )
-        else:
-            eval_result = {
-                "verdict": "APPROVED",
-                "score": 90,
-                "criteria_evaluation": [
-                    {"criterion": c, "passed": True, "feedback": "Verified compliant"}
-                    for c in milestone["acceptance_criteria"]
-                ],
-                "summary_reasoning": "Deliverable satisfies functional criteria.",
-                "suggested_improvements": []
-            }
 
-        is_approved = (
-            eval_result.get("verdict") == "APPROVED" and
-            eval_result.get("score", 0) >= milestone["quality_threshold_score"]
+            if not isinstance(validator, dict):
+                return False
+
+            return validator.get("decision") == decision
+
+        # -----------------------------------------------------
+        # GENLAYER CONSENSUS EXECUTION
+        # -----------------------------------------------------
+
+        result = gl.vm.run_nondet_unsafe(
+            evaluate,
+            validate,
         )
 
-        resolution_data = {
-            "verdict": "APPROVED" if is_approved else "REJECTED",
-            "score": eval_result.get("score", 0),
-            "summary_reasoning": eval_result.get("summary_reasoning", ""),
-            "criteria_evaluation": eval_result.get("criteria_evaluation", []),
-            "suggested_improvements": eval_result.get("suggested_improvements", []),
-            "resolved_at": 1771340200,
-            "validators_agreed": eval_result.get("validators_agreed", 5),
-            "total_validators": eval_result.get("total_validators", 5)
-        }
+        escrow.decision = result["decision"]
+        escrow.score = u256(result["score"])
 
-        milestone["resolution"] = resolution_data
-        if is_approved:
-            milestone["status"] = "APPROVED"
-            escrow["total_payout_released"] += milestone["amount"]
-            if all(m["status"] == "APPROVED" for m in escrow["milestones"]):
-                escrow["status"] = "COMPLETED"
+        if result["decision"] == "ACCEPT":
+            escrow.status = "ACCEPTED"
         else:
-            milestone["status"] = "REJECTED"
+            escrow.status = "REJECTED"
+
+        return result["decision"]
+
+    # =========================================================
+    # VIEWS
+    # =========================================================
+
+    @gl.public.view
+    def get_escrow(
+        self,
+        escrow_id: u256,
+    ) -> dict:
+
+        escrow = self.escrows[escrow_id]
 
         return {
-            "success": True,
-            "is_approved": is_approved,
-            "payout_released": milestone["amount"] if is_approved else 0.0,
-            "resolution": resolution_data
+            "escrow_id": escrow.escrow_id,
+            "client": escrow.client,
+            "contractor": escrow.contractor,
+            "title": escrow.title,
+            "description": escrow.description,
+            "category": escrow.category,
+            "requirements": escrow.requirements,
+            "criteria": escrow.criteria,
+            "amount": escrow.amount,
+            "quality_threshold": escrow.quality_threshold,
+            "deliverable_url": escrow.deliverable_url,
+            "deliverable_notes": escrow.deliverable_notes,
+            "status": escrow.status,
+            "decision": escrow.decision,
+            "score": escrow.score,
         }
+
+    @gl.public.view
+    def get_status(
+        self,
+        escrow_id: u256,
+    ) -> str:
+        return self.escrows[escrow_id].status
+
+    @gl.public.view
+    def get_decision(
+        self,
+        escrow_id: u256,
+    ) -> str:
+        return self.escrows[escrow_id].decision
+
+    @gl.public.view
+    def get_score(
+        self,
+        escrow_id: u256,
+    ) -> u256:
+        return self.escrows[escrow_id].score
