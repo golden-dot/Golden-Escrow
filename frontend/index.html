@@ -100,6 +100,12 @@
 
         <div class="network-stats-row">
           <div class="stat-item">
+            <span class="stat-label">Deployed Contract Address</span>
+            <div class="stat-value neon" id="stat-deployed-contract" style="font-size:0.95rem;">
+              <a href="https://studio.genlayer.com/contract/0xd0C596531ea0653Def4AAb200a9B8A3686bed552" target="_blank" style="color:var(--primary);text-decoration:underline;">0xd0C5...d552</a>
+            </div>
+          </div>
+          <div class="stat-item">
             <span class="stat-label">Active Committee Validators</span>
             <div class="stat-value neon" id="stat-validators">5 Nodes</div>
           </div>
@@ -182,7 +188,7 @@
               <button class="code-tab-btn active" data-contract="IntelligentEscrow">IntelligentEscrow.py</button>
               <button class="code-tab-btn" data-contract="TruthForgeOracle">TruthForgeOracle.py</button>
             </div>
-            <span style="font-size:0.75rem;font-family:var(--font-mono);color:var(--primary);">Python 3.14 / GenVM 0.1.0</span>
+            <span style="font-size:0.75rem;font-family:var(--font-mono);color:var(--primary);">Python 3.14 / GenVM 0.2.16</span>
           </div>
           <pre class="code-body" id="contract-code-body"></pre>
         </div>
@@ -309,7 +315,7 @@
               <input type="text" class="form-control" id="milestone-1-title" value="Core Deliverable & CI Test Benchmarks" required>
             </div>
             <div class="form-group">
-              <label class="form-label">Milestone Description</label>
+              <label class="form-label">Milestone Description / Requirements</label>
               <input type="text" class="form-control" id="milestone-1-desc" value="Deliver functional repository with passed automated test suites." required>
             </div>
             <div class="form-group">

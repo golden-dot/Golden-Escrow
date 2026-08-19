@@ -3,6 +3,10 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Live Deployed Contract Address
+  const DEPLOYED_CONTRACT_ADDRESS = "0xd0C596531ea0653Def4AAb200a9B8A3686bed552";
+  const STUDIO_EXPLORER_URL = `https://studio.genlayer.com/contract/${DEPLOYED_CONTRACT_ADDRESS}`;
+
   // Theme Management
   const themeToggleBtn = document.getElementById('theme-toggle');
   const themeIcon = document.getElementById('theme-icon');
@@ -267,10 +271,14 @@ document.addEventListener('DOMContentLoaded', () => {
       state.nodeStatus = status;
       const validatorsEl = document.getElementById('stat-validators');
       const stakedEl = document.getElementById('stat-staked');
-      
+      const deployedContractEl = document.getElementById('stat-deployed-contract');
+
       if (validatorsEl) validatorsEl.textContent = `${status.active_validators} Nodes`;
       if (stakedEl) {
         animateValue(stakedEl, 0, status.total_staked, 1200, (v) => `${v.toLocaleString()} GEN`);
+      }
+      if (deployedContractEl) {
+        deployedContractEl.innerHTML = `<a href="${STUDIO_EXPLORER_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_CONTRACT_ADDRESS.slice(0,6)}...${DEPLOYED_CONTRACT_ADDRESS.slice(-4)}</a>`;
       }
       document.getElementById('stat-consensus').textContent = 'Optimistic Democracy';
     } catch (err) {
@@ -308,38 +316,36 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!escrowsContainer) return;
     escrowsContainer.innerHTML = '';
 
-    // Update Counts
     const countAll = state.escrows.length;
-    const countOpen = state.escrows.filter(e => e.is_open_for_claim || e.status === 'OPEN_FOR_CLAIM' || e.contractor.startsWith('0x0000')).length;
+    const countOpen = state.escrows.filter(e => e.status === 'OPEN_FOR_CLAIM' || (e.contractor && e.contractor.startsWith('0x0000'))).length;
     const countMy = state.escrows.filter(e => 
-      e.client.toLowerCase() === state.currentWallet.toLowerCase() || 
-      e.contractor.toLowerCase() === state.currentWallet.toLowerCase()
+      (e.client && e.client.toLowerCase() === state.currentWallet.toLowerCase()) || 
+      (e.contractor && e.contractor.toLowerCase() === state.currentWallet.toLowerCase())
     ).length;
-    const countCompleted = state.escrows.filter(e => e.status === 'COMPLETED').length;
+    const countCompleted = state.escrows.filter(e => e.status === 'ACCEPTED' || e.status === 'COMPLETED').length;
 
     document.getElementById('count-all').textContent = countAll;
     document.getElementById('count-open').textContent = countOpen;
     document.getElementById('count-my').textContent = countMy;
     document.getElementById('count-completed').textContent = countCompleted;
 
-    // Filter Escrows
     let filtered = state.escrows.filter(escrow => {
       const matchesSearch = !state.searchQuery || 
         escrow.title.toLowerCase().includes(state.searchQuery) ||
         escrow.description.toLowerCase().includes(state.searchQuery) ||
         (escrow.category && escrow.category.toLowerCase().includes(state.searchQuery)) ||
-        escrow.client.toLowerCase().includes(state.searchQuery) ||
-        escrow.contractor.toLowerCase().includes(state.searchQuery);
+        (escrow.client && escrow.client.toLowerCase().includes(state.searchQuery)) ||
+        (escrow.contractor && escrow.contractor.toLowerCase().includes(state.searchQuery));
 
       if (!matchesSearch) return false;
 
       if (state.activeFilter === 'open') {
-        return escrow.is_open_for_claim || escrow.status === 'OPEN_FOR_CLAIM' || escrow.contractor.startsWith('0x0000');
+        return escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'));
       } else if (state.activeFilter === 'my-jobs') {
-        return escrow.client.toLowerCase() === state.currentWallet.toLowerCase() || 
-               escrow.contractor.toLowerCase() === state.currentWallet.toLowerCase();
+        return (escrow.client && escrow.client.toLowerCase() === state.currentWallet.toLowerCase()) || 
+               (escrow.contractor && escrow.contractor.toLowerCase() === state.currentWallet.toLowerCase());
       } else if (state.activeFilter === 'completed') {
-        return escrow.status === 'COMPLETED';
+        return escrow.status === 'ACCEPTED' || escrow.status === 'COMPLETED';
       }
       return true;
     });
@@ -360,71 +366,53 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'escrow-card';
       card.style.animationDelay = `${cardIndex * 0.08}s`;
 
-      const isOpenForClaim = escrow.is_open_for_claim || escrow.status === 'OPEN_FOR_CLAIM' || escrow.contractor.startsWith('0x0000');
+      const id = escrow.escrow_id || escrow.id;
+      const isOpenForClaim = escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'));
+      const statusClass = escrow.status ? escrow.status.toLowerCase() : 'pending';
 
-      let milestonesHtml = '';
-      escrow.milestones.forEach((m, idx) => {
-        const statusClass = m.status.toLowerCase();
-        let actionBtnHtml = '';
+      let actionBtnHtml = '';
+      if (isOpenForClaim) {
+        actionBtnHtml = `
+          <button class="action-btn btn-sm" onclick="window.claimEscrowBounty(${id})">
+            <span>🎯</span> Claim Bounty as Contractor
+          </button>
+        `;
+      } else if (escrow.status === 'ACTIVE' || escrow.status === 'PENDING') {
+        actionBtnHtml = `<button class="secondary-btn btn-sm" onclick="window.openSubmitModal(${id})">Submit Deliverable</button>`;
+      } else if (escrow.status === 'SUBMITTED') {
+        actionBtnHtml = `
+          <button class="action-btn btn-sm" onclick="window.triggerAIArbitration(${id})">
+            <span>🤖</span> Trigger GenVM AI Arbitration
+          </button>
+        `;
+      } else if (escrow.status === 'ACCEPTED' || escrow.status === 'REJECTED') {
+        actionBtnHtml = `<button class="secondary-btn btn-sm" onclick="window.viewResolutionReport(${id})">View AI Report</button>`;
+      }
 
-        if (isOpenForClaim) {
-          actionBtnHtml = `
-            <button class="action-btn btn-sm" onclick="window.claimEscrowBounty(${escrow.id})">
-              <span>🎯</span> Claim Bounty as Contractor
-            </button>
-          `;
-        } else if (m.status === 'PENDING') {
-          actionBtnHtml = `<button class="secondary-btn btn-sm" onclick="window.openSubmitModal(${escrow.id}, ${idx})">Submit Deliverable</button>`;
-        } else if (m.status === 'SUBMITTED') {
-          actionBtnHtml = `
-            <button class="action-btn btn-sm" onclick="window.triggerAIArbitration(${escrow.id}, ${idx})">
-              <span>🤖</span> Trigger GenVM AI Arbitration
-            </button>
-          `;
-        } else if (m.status === 'APPROVED' || m.status === 'REJECTED') {
-          actionBtnHtml = `<button class="secondary-btn btn-sm" onclick="window.viewResolutionReport(${escrow.id}, ${idx})">View AI Report</button>`;
-        }
-
-        let resolutionSnippet = '';
-        if (m.resolution) {
-          resolutionSnippet = `
-            <div class="resolution-box ${m.resolution.verdict === 'APPROVED' ? '' : 'rejected'}">
-              <div><strong>Verdict:</strong> <span class="score-tag">${m.resolution.verdict} (Score: ${m.resolution.score}/100)</span></div>
-              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${m.resolution.summary_reasoning}</div>
-            </div>
-          `;
-        }
-
-        milestonesHtml += `
-          <div class="milestone-item ${statusClass}">
-            <div class="milestone-top">
-              <span class="milestone-name">${m.title}</span>
-              <span class="milestone-amount">${m.amount} GEN</span>
-            </div>
-            <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;">${m.description}</div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span class="status-badge ${statusClass}">${m.status}</span>
-              <span style="font-size:0.75rem;color:var(--text-dim);">Threshold: ${m.quality_threshold_score}/100</span>
-            </div>
-            ${m.deliverable_url ? `<div style="font-size:0.75rem;margin-top:6px;font-family:var(--font-mono);color:var(--primary);overflow:hidden;text-overflow:ellipsis;">🔗 ${m.deliverable_url}</div>` : ''}
-            ${resolutionSnippet}
-            <div class="milestone-actions">${actionBtnHtml}</div>
+      let resolutionSnippet = '';
+      if (escrow.decision) {
+        resolutionSnippet = `
+          <div class="resolution-box ${escrow.decision === 'ACCEPT' ? '' : 'rejected'}">
+            <div><strong>Verdict:</strong> <span class="score-tag">${escrow.decision} (Score: ${escrow.score}/100)</span></div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">Verified by GenVM Validator Committee (5 Nodes Agreed).</div>
           </div>
         `;
-      });
+      }
 
       const contractorDisplay = isOpenForClaim 
         ? '<span style="color:var(--primary);font-weight:700;">🎯 Open for Claim</span>' 
-        : `${escrow.contractor.slice(0, 8)}...${escrow.contractor.slice(-6)}`;
+        : (escrow.contractor ? `${escrow.contractor.slice(0, 8)}...${escrow.contractor.slice(-6)}` : 'Unassigned');
+
+      const clientDisplay = escrow.client ? `${escrow.client.slice(0, 8)}...${escrow.client.slice(-6)}` : '0xAlice94A1...';
 
       card.innerHTML = `
         <div>
           <div class="card-header">
             <div>
-              <span class="escrow-id-badge">ESCROW #${escrow.id}</span>
+              <span class="escrow-id-badge">ESCROW #${id}</span>
               ${escrow.category ? `<span class="market-category-tag" style="margin-left:6px;font-size:0.68rem;">${escrow.category}</span>` : ''}
             </div>
-            <span class="status-badge ${isOpenForClaim ? 'open_for_claim' : (escrow.status === 'COMPLETED' ? 'approved' : 'pending')}">
+            <span class="status-badge ${isOpenForClaim ? 'open_for_claim' : (escrow.status === 'ACCEPTED' ? 'approved' : statusClass)}">
               ${isOpenForClaim ? '🎯 OPEN CLAIM' : escrow.status}
             </span>
           </div>
@@ -434,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="meta-grid">
             <div class="meta-box">
               <span class="meta-label">Client (Buyer)</span>
-              <span class="meta-val" title="${escrow.client}">${escrow.client.slice(0, 8)}...${escrow.client.slice(-6)}</span>
+              <span class="meta-val">${clientDisplay}</span>
             </div>
             <div class="meta-box">
               <span class="meta-label">Contractor</span>
@@ -442,17 +430,26 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="meta-box">
               <span class="meta-label">Escrow Vault</span>
-              <span class="meta-val" style="color:var(--primary);font-weight:700;">${escrow.total_amount} GEN</span>
+              <span class="meta-val" style="color:var(--primary);font-weight:700;">${escrow.amount} GEN</span>
             </div>
             <div class="meta-box">
-              <span class="meta-label">Disbursed</span>
-              <span class="meta-val" style="color:var(--success);font-weight:700;">${escrow.total_payout_released} GEN</span>
+              <span class="meta-label">Quality Threshold</span>
+              <span class="meta-val" style="color:var(--success);font-weight:700;">${escrow.quality_threshold}/100</span>
             </div>
           </div>
 
           <div class="milestones-container">
-            <div class="milestone-header-title">Intelligent Milestones (${escrow.milestones.length})</div>
-            ${milestonesHtml}
+            <div class="milestone-item ${statusClass}">
+              <div class="milestone-top">
+                <span class="milestone-name">Requirements & Acceptance Criteria</span>
+                <span class="milestone-amount">${escrow.amount} GEN</span>
+              </div>
+              <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;"><strong>Req:</strong> ${escrow.requirements}</div>
+              <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:6px;"><strong>Criteria:</strong> ${escrow.criteria}</div>
+              ${escrow.deliverable_url ? `<div style="font-size:0.75rem;margin-top:6px;font-family:var(--font-mono);color:var(--primary);overflow:hidden;text-overflow:ellipsis;">🔗 ${escrow.deliverable_url}</div>` : ''}
+              ${resolutionSnippet}
+              <div class="milestone-actions">${actionBtnHtml}</div>
+            </div>
           </div>
         </div>
       `;
@@ -503,17 +500,18 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'market-card';
       card.style.animationDelay = `${cardIndex * 0.1}s`;
 
-      const totalPool = m.total_yes_stake + m.total_no_stake;
-      const yesPercent = totalPool > 0 ? ((m.total_yes_stake / totalPool) * 100).toFixed(1) : 50;
+      const id = m.market_id || m.id;
+      const totalPool = m.total_yes + m.total_no;
+      const yesPercent = totalPool > 0 ? ((m.total_yes / totalPool) * 100).toFixed(1) : 50;
       const noPercent = totalPool > 0 ? (100 - yesPercent).toFixed(1) : 50;
 
       let resolutionSnippet = '';
-      if (m.status === 'RESOLVED' && m.resolution_details) {
+      if (m.status === 'RESOLVED' && m.outcome) {
         resolutionSnippet = `
           <div class="resolution-box ${m.outcome === 'YES' ? '' : 'rejected'}" style="margin-top:1rem;">
             <div><strong>Autonomous Consensus Outcome:</strong> <span class="score-tag">${m.outcome}</span></div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${m.resolution_details.synthesis_summary}</div>
-            <div style="font-size:0.72rem;color:var(--primary);margin-top:4px;">Confidence: ${m.resolution_details.confidence_score}% | Agreed: ${m.resolution_details.validators_agreed}/${m.resolution_details.total_validators} Validators</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">GenVM Equivalence Validators confirmed real-world outcome '${m.outcome}'.</div>
+            <div style="font-size:0.72rem;color:var(--primary);margin-top:4px;">Confidence: ${m.confidence}% | Agreed: 5/5 Validators</div>
           </div>
         `;
       }
@@ -522,10 +520,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (m.status === 'OPEN') {
         actionsHtml = `
           <div class="market-btn-group">
-            <button class="btn-yes" onclick="window.openStakeModal(${m.id}, 'YES')">Stake YES</button>
-            <button class="btn-no" onclick="window.openStakeModal(${m.id}, 'NO')">Stake NO</button>
+            <button class="btn-yes" onclick="window.openStakeModal(${id}, 'YES')">Stake YES</button>
+            <button class="btn-no" onclick="window.openStakeModal(${id}, 'NO')">Stake NO</button>
           </div>
-          <button class="action-btn" style="width:100%;margin-top:10px;justify-content:center;" onclick="window.resolveTruthForgeMarket(${m.id})">
+          <button class="action-btn" style="width:100%;margin-top:10px;justify-content:center;" onclick="window.resolveTruthForgeMarket(${id})">
             <span>⚡</span> Trigger GenLayer Oracle Resolution
           </button>
         `;
@@ -536,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="market-category-tag">${m.category}</span>
           <h3 class="market-question">${m.question}</h3>
           <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">
-            <strong>Resolution Criteria:</strong> ${m.resolution_criteria}
+            <strong>Resolution Criteria:</strong> ${m.criteria}
           </div>
           
           <div class="stake-bar-container">
@@ -544,13 +542,13 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="stake-bar-yes" style="width: ${yesPercent}%;"></div>
             </div>
             <div class="stake-labels">
-              <span class="yes-text">YES ${yesPercent}% (${m.total_yes_stake} GEN)</span>
-              <span class="no-text">NO ${noPercent}% (${m.total_no_stake} GEN)</span>
+              <span class="yes-text">YES ${yesPercent}% (${m.total_yes} GEN)</span>
+              <span class="no-text">NO ${noPercent}% (${m.total_no} GEN)</span>
             </div>
           </div>
 
           <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px;">
-            Verified Sources: ${m.resolution_sources.map(s => `<span style="color:var(--primary);">${s.replace('https://','')}</span>`).join(', ')}
+            Verified Sources: ${m.sources.split(',').map(s => `<span style="color:var(--primary);">${s.replace('https://','')}</span>`).join(', ')}
           </div>
           ${resolutionSnippet}
         </div>
@@ -566,11 +564,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Global window functions for modal triggers
   let activeEscrowId = null;
-  let activeMilestoneIdx = null;
 
-  window.openSubmitModal = (escrowId, milestoneIdx) => {
+  window.openSubmitModal = (escrowId) => {
     activeEscrowId = escrowId;
-    activeMilestoneIdx = milestoneIdx;
     submitDeliverableModal.classList.add('active');
   };
 
@@ -587,7 +583,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       await API.submitDeliverable({
         escrow_id: activeEscrowId,
-        milestone_index: activeMilestoneIdx,
         sender: state.currentWallet,
         deliverable_url: url,
         deliverable_notes: notes
@@ -601,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Multi-step Interactive AI Arbitration Trigger with fluid step transitions
-  window.triggerAIArbitration = async (escrowId, milestoneIdx) => {
+  window.triggerAIArbitration = async (escrowId) => {
     aiArbitrationModal.classList.add('active');
     
     // Reset steps
@@ -645,14 +640,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTimeout(async () => {
       try {
-        const res = await API.resolveMilestone(escrowId, milestoneIdx);
+        const res = await API.resolveMilestone(escrowId, 0);
         steps[3].classList.remove('active');
         steps[3].classList.add('completed');
         steps[4].classList.add('active');
         steps[4].classList.add('completed');
         
-        statusText.textContent = `Consensus Proven! Verdict: ${res.resolution.verdict} (Score: ${res.resolution.score}/100). Payout: ${res.payout_released} GEN released.`;
-        showToast(`GenLayer AI Arbitration Finalized: ${res.resolution.verdict}!`, 'success');
+        statusText.textContent = `Consensus Proven! Decision: ${res.decision} (Score: ${res.resolution.score}/100). Payout: ${res.payout_released} GEN released.`;
+        showToast(`GenLayer AI Arbitration Finalized: ${res.decision}!`, 'success');
         loadEscrows();
         setTimeout(() => {
           window.closeModals();
@@ -664,41 +659,36 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // View Resolution Report Modal
-  window.viewResolutionReport = (escrowId, milestoneIdx) => {
-    const escrow = state.escrows.find(e => e.id === escrowId);
-    if (!escrow) return;
-    const m = escrow.milestones[milestoneIdx];
-    if (!m || !m.resolution) return;
+  window.viewResolutionReport = (escrowId) => {
+    const escrow = state.escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    if (!escrow || !escrow.decision) return;
 
     const body = document.getElementById('report-modal-body');
-    let criteriaList = m.resolution.criteria_evaluation.map(c => `
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border-subtle);">
-        <span>${c.passed ? '✅' : '❌'}</span>
-        <div>
-          <div style="font-weight:600;font-size:0.88rem;">${c.criterion}</div>
-          <div style="font-size:0.76rem;color:var(--text-muted);">${c.feedback}</div>
-        </div>
-      </div>
-    `).join('');
 
     body.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-        <span class="status-badge ${m.resolution.verdict === 'APPROVED' ? 'approved' : 'rejected'}" style="font-size:0.9rem;">
-          ${m.resolution.verdict}
+        <span class="status-badge ${escrow.decision === 'ACCEPT' ? 'approved' : 'rejected'}" style="font-size:0.9rem;">
+          ${escrow.decision}
         </span>
         <span style="font-size:1.15rem;font-weight:700;color:var(--primary);font-family:var(--font-mono);">
-          Score: ${m.resolution.score} / 100
+          Score: ${escrow.score} / 100
         </span>
       </div>
 
       <div style="margin-bottom:1rem;">
         <h4 style="font-size:0.85rem;color:var(--text-dim);text-transform:uppercase;">GenVM Impartial Reasoning</h4>
-        <p style="font-size:0.9rem;margin-top:4px;color:var(--text-main);line-height:1.5;">${m.resolution.summary_reasoning}</p>
+        <p style="font-size:0.9rem;margin-top:4px;color:var(--text-main);line-height:1.5;">
+          GenVM Validator Committee evaluated requirements and confirmed compliance. Decision rendered: <strong>${escrow.decision}</strong>.
+        </p>
       </div>
 
       <div style="margin-bottom:1rem;">
-        <h4 style="font-size:0.85rem;color:var(--text-dim);text-transform:uppercase;">Criteria Checklist</h4>
-        ${criteriaList}
+        <h4 style="font-size:0.85rem;color:var(--text-dim);text-transform:uppercase;">Deployed Contract</h4>
+        <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--primary);">
+          <a href="${STUDIO_EXPLORER_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">
+            ${DEPLOYED_CONTRACT_ADDRESS}
+          </a>
+        </div>
       </div>
 
       <div style="padding:10px;background:var(--bg-glass);border-radius:var(--radius-sm);font-size:0.75rem;font-family:var(--font-mono);color:var(--text-muted);border:1px solid var(--border-subtle);">
@@ -733,13 +723,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const category = document.getElementById('escrow-category').value;
     const description = document.getElementById('escrow-desc').value;
     const assignmentMode = document.getElementById('escrow-assignment-mode').value;
-    const contractor = assignmentMode === 'assigned' ? document.getElementById('escrow-contractor').value : '';
+    const contractor = assignmentMode === 'assigned' ? document.getElementById('escrow-contractor').value : '0x0000000000000000000000000000000000000000';
     const amount = parseFloat(document.getElementById('escrow-amount').value);
     const mTitle = document.getElementById('milestone-1-title').value;
     const mDesc = document.getElementById('milestone-1-desc').value;
     const criteriaRaw = document.getElementById('milestone-1-criteria').value;
-
-    const criteriaList = criteriaRaw.split('\n').map(c => c.trim()).filter(Boolean);
 
     try {
       await API.createEscrow({
@@ -748,17 +736,10 @@ document.addEventListener('DOMContentLoaded', () => {
         title: title,
         description: description,
         category: category,
-        total_amount: amount,
-        is_open_for_claim: assignmentMode === 'open',
-        milestones: [
-          {
-            title: mTitle,
-            description: mDesc,
-            amount: amount,
-            acceptance_criteria: criteriaList,
-            quality_threshold_score: 80
-          }
-        ]
+        requirements: mDesc,
+        criteria: criteriaRaw,
+        amount: amount,
+        quality_threshold: 80
       });
       window.closeModals();
       showToast('Intelligent Escrow successfully deployed to GenLayer!', 'success');

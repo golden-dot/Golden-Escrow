@@ -6,7 +6,23 @@
 #   ]
 # }
 
-from genlayer import *
+try:
+    from genlayer import *
+except ImportError:
+    class gl:
+        class Contract: pass
+        class message:
+            sender_address = "0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33"
+        class public:
+            @staticmethod
+            def view(fn): return fn
+            @staticmethod
+            def write(fn): return fn
+    class Address(str): pass
+    class u256(int): pass
+    class TreeMap(dict): pass
+    def allow_storage(cls): return cls
+
 from dataclasses import dataclass
 
 
@@ -32,6 +48,7 @@ class TruthForgeOracle(gl.Contract):
     next_market_id: u256
 
     def __init__(self):
+        self.markets = TreeMap()
         self.next_market_id = u256(1)
 
     # =========================================================
