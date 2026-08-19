@@ -1104,26 +1104,39 @@ document.addEventListener('DOMContentLoaded', () => {
   if (createEscrowForm) {
     createEscrowForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const btn = document.getElementById('create-escrow-submit-btn');
+      const btn = document.getElementById('create-escrow-submit-btn') || e.submitter;
       if (btn) {
         btn.classList.add('btn-loading');
         btn.disabled = true;
       }
 
-      const amount = parseFloat(document.getElementById('escrow-amount').value) || 100;
+      const getVal = (id, fallback = '') => {
+        const el = document.getElementById(id);
+        return el ? el.value : fallback;
+      };
+
+      const amount = parseFloat(getVal('escrow-amount', '100')) || 100;
       const clientAddr = state.connectedWallet || "0x1111111111111111111111111111111111111111";
+
+      const assignmentSelectEl = document.getElementById('escrow-assignment-mode');
+      const contractorInputEl = document.getElementById('escrow-contractor');
+      const contractorVal = (assignmentSelectEl && assignmentSelectEl.value === 'assigned' && contractorInputEl) 
+        ? contractorInputEl.value 
+        : '0x0000000000000000000000000000000000000000';
+
+      const qualityThresholdVal = parseInt(getVal('escrow-quality-threshold', '80')) || 80;
 
       try {
         const res = await API.createEscrow({
           client: clientAddr,
-          contractor: assignmentSelect && assignmentSelect.value === 'assigned' ? document.getElementById('escrow-contractor').value : '0x0000000000000000000000000000000000000000',
-          title: document.getElementById('escrow-title').value,
-          description: document.getElementById('escrow-desc').value,
-          category: document.getElementById('escrow-category').value,
-          requirements: document.getElementById('escrow-requirements').value,
-          criteria: document.getElementById('escrow-criteria').value,
+          contractor: contractorVal,
+          title: getVal('escrow-title'),
+          description: getVal('escrow-desc', getVal('escrow-requirements')),
+          category: getVal('escrow-category', 'SDK & Developer Tooling'),
+          requirements: getVal('escrow-requirements'),
+          criteria: getVal('escrow-criteria'),
           amount: amount,
-          quality_threshold: 80
+          quality_threshold: qualityThresholdVal
         });
         if (btn) {
           btn.classList.remove('btn-loading');
@@ -1132,7 +1145,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.closeModals();
         loadEscrows();
 
-        window.openDepositRequiredModal(res.escrow_id, amount);
+        if (res && res.escrow_id) {
+          window.openDepositRequiredModal(res.escrow_id, amount);
+        }
       } catch (err) {
         if (btn) {
           btn.classList.remove('btn-loading');

@@ -250,8 +250,23 @@
           <input type="text" class="form-control" id="escrow-title" placeholder="e.g. Implement Py-GenLayer SDK Feature" required>
         </div>
         <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" id="escrow-desc" placeholder="Overview of the task..."></textarea>
+        </div>
+        <div class="form-group">
           <label class="form-label">Category</label>
           <input type="text" class="form-control" id="escrow-category" placeholder="SDK & Developer Tooling" value="SDK & Developer Tooling">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assignment Mode</label>
+          <select class="form-control" id="escrow-assignment-mode">
+            <option value="open">Open Bounty (Any Builder Can Claim)</option>
+            <option value="assigned">Assign Specific Contractor Address</option>
+          </select>
+        </div>
+        <div class="form-group" id="contractor-input-wrapper" style="display:none;">
+          <label class="form-label">Contractor Wallet Address</label>
+          <input type="text" class="form-control" id="escrow-contractor" placeholder="0x..." value="0x0000000000000000000000000000000000000000">
         </div>
         <div class="form-group">
           <label class="form-label">Requirements</label>
@@ -269,7 +284,7 @@
           <label class="form-label">Quality Threshold Score (0 - 100)</label>
           <input type="number" class="form-control" id="escrow-quality-threshold" placeholder="80" value="80" min="0" max="100" required>
         </div>
-        <button type="submit" class="action-btn" style="width:100%;margin-top:1rem;">
+        <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:1rem;">
           Deploy Vault on-Chain
         </button>
       </form>
@@ -296,6 +311,27 @@
           Submit to Intelligent Contract
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4: DEPOSIT & FUND ESCROW VAULT MODAL -->
+  <div class="modal-overlay" id="deposit-payment-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Escrow Deposit</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('deposit-payment-modal').classList.remove('active')">&times;</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;">
+        Deposit &amp; fund escrow vault on-chain to activate bounty for contractors worldwide.
+      </p>
+      <div style="background:var(--bg-canvas);padding:1rem;border-radius:var(--radius-md);border:1px solid var(--border-subtle);margin-bottom:1.5rem;">
+        <div style="font-size:0.85rem;color:var(--text-muted);">Bounty Title: <strong id="deposit-task-title" style="color:var(--text-main);">Escrow Bounty</strong></div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--primary);margin-top:6px;" id="deposit-task-amount">500 GEN</div>
+        <div style="font-size:0.78rem;font-family:var(--font-mono);color:var(--text-dim);margin-top:6px;">From: <span id="payment-from-wallet">Connected Wallet</span></div>
+      </div>
+      <button class="action-btn" id="confirm-deposit-sent-btn" style="width:100%;">
+        Confirm On-Chain Deposit
+      </button>
     </div>
   </div>
 
