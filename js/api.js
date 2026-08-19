@@ -1,68 +1,27 @@
 /**
  * api.js - GenLayer Intellex Protocol API Client & Cloud Storage Sync
- * Enables real-time cross-device sync so bounties created by Clients on any browser
- * are instantly publicized to all Builders worldwide!
+ * Enables real-time cross-device sync for authentic Client-created bounties only!
  */
 
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
 // Cloud Sync Endpoint (CORS-enabled KV bin for cross-browser live sync)
-const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v1/escrows";
-const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v1/markets";
+const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v2/escrows";
+const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v2/markets";
 
-const DEFAULT_ESCROWS = [
-  {
-    escrow_id: 1,
-    client: "0xAliceClient",
-    contractor: "0x0000000000000000000000000000000000000000",
-    title: "GenLayer Bradbury DEX Router Security Audit",
-    description: "Comprehensive security assessment, GenVM non-deterministic invariant testing, and mathematical formal verification.",
-    category: "Smart Contract Security",
-    requirements: "Develop automated fuzz tests for non-deterministic web and prompt handlers on GenLayer Bradbury.",
-    criteria: "Zero reentrancy or state mismatch during validator equivalence. Fuzz suite covers > 10,000 synthetic transaction edge-cases.",
-    amount: 1200,
-    quality_threshold: 85,
-    deliverable_url: "",
-    deliverable_notes: "",
-    status: "OPEN_FOR_CLAIM",
-    decision: "",
-    score: 0,
-    payment_received: true,
-    payout_address: "",
-    createdAt: new Date().toISOString()
-  },
-  {
-    escrow_id: 2,
-    client: "0xDevinClient",
-    contractor: "0x0000000000000000000000000000000000000000",
-    title: "GenLayer Python SDK Async WebSocket Listener Bounty",
-    description: "Open Community Bounty: Build high-throughput async WebSocket event subscription wrapper for GenLayer Bradbury nodes with automatic reconnects.",
-    category: "SDK & Developer Tooling",
-    requirements: "Deliver modular Python package with 90%+ pytest coverage and typing annotations.",
-    criteria: "Fully async using asyncio and websockets. Pytest suite passing with 90%+ code coverage.",
-    amount: 950,
-    quality_threshold: 85,
-    deliverable_url: "",
-    deliverable_notes: "",
-    status: "OPEN_FOR_CLAIM",
-    decision: "",
-    score: 0,
-    payment_received: true,
-    payout_address: "",
-    createdAt: new Date().toISOString()
-  }
-];
+// NO PRE-SEEDED DEMO BOUNTIES (Only real Client-created bounties are stored & publicized)
+const DEFAULT_ESCROWS = [];
 
 // Helper to get local fallback escrows
 function getLocalEscrows() {
   try {
     const data = localStorage.getItem('intellex_global_escrows');
-    if (!data) return DEFAULT_ESCROWS;
+    if (!data) return [];
     const parsed = JSON.parse(data);
-    return (Array.isArray(parsed) && parsed.length > 0) ? parsed : DEFAULT_ESCROWS;
+    return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
-    return DEFAULT_ESCROWS;
+    return [];
   }
 }
 
@@ -78,7 +37,7 @@ async function fetchCloudEscrows() {
       const text = await response.text();
       if (text && text.trim().startsWith('[')) {
         const parsed = JSON.parse(text);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           saveLocalEscrows(parsed);
           return parsed;
         }
