@@ -91,9 +91,9 @@ class NonDetContext:
             }
 
         # Oracle evaluation
-        if "question" in prompt_lower or "verified data sources" in prompt_lower:
+        if any(k in prompt_lower for k in ["question", "verified data sources", "market question", "resolution criteria"]):
             is_no = any(w in prompt_lower for w in ["failed to launch", "event cancelled", "outcome: no", "was false", "rejected by committee"])
-            return {"outcome": "NO" if is_no else "YES", "confidence_score": 95}
+            return {"outcome": "NO" if is_no else "YES", "confidence": 95, "confidence_score": 95}
 
         return {"decision": "ACCEPT", "score": 90}
 
