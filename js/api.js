@@ -6,9 +6,9 @@
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
-// Cloud Sync Endpoint (CORS-enabled KV bin for cross-browser live sync)
-const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v2/escrows";
-const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v2/markets";
+// Cloud Sync Endpoint (Fresh clean store v3 - 0 bounties)
+const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v3/escrows";
+const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v3/markets";
 
 const DEFAULT_ESCROWS = [];
 
