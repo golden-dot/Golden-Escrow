@@ -11,6 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const ESCROW_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ESCROW_CONTRACT}`;
   const ORACLE_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ORACLE_CONTRACT}`;
 
+  // FORCE CLEAR ANY LEGACY DEMO BOUNTIES IN BROWSER STORAGE ON STARTUP
+  try {
+    const raw = localStorage.getItem('intellex_global_escrows');
+    if (raw && (raw.includes('0xAliceClient') || raw.includes('0xDevinClient') || raw.includes('DEX Router') || raw.includes('WebSocket'))) {
+      localStorage.removeItem('intellex_global_escrows');
+    }
+  } catch (e) {}
+
   // Registered Accounts Repository
   let registeredAccounts = [];
   try {
@@ -444,10 +452,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Load & Render Escrows
+  // Load & Render Escrows (Filter out any 0xAliceClient / 0xDevinClient legacy items)
   async function loadEscrows() {
     try {
-      const escrows = await API.getEscrows();
+      let escrows = await API.getEscrows();
+      if (Array.isArray(escrows)) {
+        escrows = escrows.filter(e => {
+          if (!e) return false;
+          const clientStr = (e.client || '').toLowerCase();
+          const titleStr = (e.title || '').toLowerCase();
+          if (clientStr.includes('alice') || clientStr.includes('devin') || clientStr.includes('0xaliceclient') || clientStr.includes('0xdevinclient')) return false;
+          if (titleStr.includes('dex router security audit') || titleStr.includes('python sdk async websocket')) return false;
+          return true;
+        });
+      } else {
+        escrows = [];
+      }
       state.escrows = escrows;
       renderEscrows();
     } catch (err) {
