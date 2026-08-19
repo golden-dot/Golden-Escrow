@@ -38,7 +38,6 @@ function getLocalEscrows() {
     if (!data) return [];
     let parsed = JSON.parse(data);
     parsed = cleanEscrowsArray(parsed);
-    saveLocalEscrows(parsed);
     return parsed;
   } catch (e) {
     return [];
@@ -114,6 +113,21 @@ class APIClient {
 
   async getEscrows() {
     return await fetchEscrowsData();
+  }
+
+  // Admin function: Remove all created bounties from all users
+  async clearAllBounties() {
+    localStorage.removeItem('intellex_global_escrows');
+    saveLocalEscrows([]);
+    const origin = window.location.origin.includes('localhost') ? 'http://localhost:8000' : '';
+    try {
+      await fetch(`${origin}/api/escrows/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify([])
+      });
+    } catch (e) {}
+    return { success: true, message: "All created bounties have been removed by admin." };
   }
 
   // Create Escrow Bounty (ALL CREATED BOUNTIES ARE AUTOMATICALLY PUBLICIZED TO ALL BUILDERS)

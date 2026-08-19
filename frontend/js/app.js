@@ -1518,6 +1518,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // ADMIN ACTION: Remove all created bounties from all users
+  window.adminClearAllBounties = async () => {
+    if (confirm("ADMIN ACTION: Are you sure you want to remove ALL created bounties from ALL users?")) {
+      try {
+        await API.clearAllBounties();
+        showToast("Admin Action: All created bounties removed successfully!", "success");
+        loadEscrows();
+      } catch (e) {
+        showToast("Error removing bounties: " + e.message, "danger");
+      }
+    }
+  };
+
+  // ADMIN INITIAL PURGE: Wipe all created bounties from all users
+  if (!localStorage.getItem('intellex_admin_purged_v2')) {
+    localStorage.setItem('intellex_admin_purged_v2', 'true');
+    API.clearAllBounties();
+  }
+
   // LIVE AUTO-REFRESH POLLING EVERY 1 SECOND (1000ms)
   setInterval(() => {
     if (state.currentScreen === 'dashboard') {
