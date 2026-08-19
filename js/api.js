@@ -6,22 +6,16 @@
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
-// Cloud Sync Endpoint (v6 fresh clean store - zero demo bounties)
-const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v6/escrows";
-const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v6/markets";
+// Cloud Sync Endpoint (v7 fresh clean store for live client bounties)
+const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v7/escrows";
+const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v7/markets";
 
-// Clean Filter to Purge Any Demo Accounts (0xAliceClient, 0xDevinClient, etc)
+// Strict legacy demo filter (ONLY purges exact original demo IDs, never user bounties)
 function cleanEscrowsArray(arr) {
   if (!Array.isArray(arr)) return [];
   return arr.filter(e => {
     if (!e) return false;
-    const clientStr = (e.client || '').toLowerCase();
-    const titleStr = (e.title || '').toLowerCase();
-    
-    if (clientStr.includes('alice') || clientStr.includes('devin') || clientStr.includes('0xaliceclient') || clientStr.includes('0xdevinclient')) {
-      return false;
-    }
-    if (titleStr.includes('dex router security audit') || titleStr.includes('python sdk async websocket')) {
+    if (e.client === "0xAliceClient" || e.client === "0xDevinClient") {
       return false;
     }
     return true;
@@ -109,7 +103,7 @@ class APIClient {
     return await fetchCloudEscrows();
   }
 
-  // Create Escrow in AWAITING_DEPOSIT state (Will NOT be publicized until payment is confirmed!)
+  // Create Escrow in AWAITING_DEPOSIT state
   async createEscrow(data) {
     const escrows = await fetchCloudEscrows();
     const newId = escrows.length + 1;
@@ -141,26 +135,27 @@ class APIClient {
   // Confirm Deposit Payment & Publicize Bounty to All Builders Worldwide
   async confirmEscrowDeposit(escrowId) {
     const escrows = await fetchCloudEscrows();
-    const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (target) {
       target.payment_received = true;
       target.status = "OPEN_FOR_CLAIM";
+      target.contractor = "0x0000000000000000000000000000000000000000";
       await syncCloudEscrows(escrows);
-      return { success: true, message: `Payment verified! Escrow #${escrowId} is now publicized to all Builders.`, escrow: target };
+      return { success: true, message: `Payment verified! Escrow Bounty #${escrowId} is now publicized to all Builders.`, escrow: target };
     }
-    throw new Error(`Escrow #${escrowId} not found`);
+    throw new Error(`Escrow Bounty #${escrowId} not found`);
   }
 
   async deleteEscrow(escrowId) {
     let escrows = await fetchCloudEscrows();
-    escrows = escrows.filter(e => (e.escrow_id || e.id) !== escrowId);
+    escrows = escrows.filter(e => (e.escrow_id || e.id) != escrowId);
     await syncCloudEscrows(escrows);
-    return { success: true, message: `Escrow #${escrowId} deleted` };
+    return { success: true, message: `Escrow Bounty #${escrowId} deleted` };
   }
 
   async joinEscrow(data) {
     const escrows = await fetchCloudEscrows();
-    const target = escrows.find(e => (e.escrow_id || e.id) === data.escrow_id);
+    const target = escrows.find(e => (e.escrow_id || e.id) == data.escrow_id);
     if (target) {
       target.contractor = data.participant_address || "Builder";
       target.status = "ACTIVE";
@@ -172,7 +167,7 @@ class APIClient {
   // ALLOW BUILDER TO CANCEL CLAIMED BOUNTY & RETURN TO OPEN MARKETPLACE
   async cancelClaimedBounty(escrowId) {
     const escrows = await fetchCloudEscrows();
-    const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (target) {
       target.contractor = "0x0000000000000000000000000000000000000000";
       target.deliverable_url = "";
@@ -186,7 +181,7 @@ class APIClient {
 
   async submitDeliverable(data) {
     const escrows = await fetchCloudEscrows();
-    const target = escrows.find(e => (e.escrow_id || e.id) === data.escrow_id);
+    const target = escrows.find(e => (e.escrow_id || e.id) == data.escrow_id);
     if (target) {
       target.deliverable_url = data.deliverable_url;
       target.deliverable_notes = data.deliverable_notes;
@@ -198,7 +193,7 @@ class APIClient {
 
   async resolveMilestone(escrowId) {
     const escrows = await fetchCloudEscrows();
-    const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (target) {
       target.decision = "ACCEPT";
       target.score = 92;
@@ -222,7 +217,7 @@ class APIClient {
 
   async releasePayout(escrowId, destinationAddress) {
     const escrows = await fetchCloudEscrows();
-    const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (target) {
       target.payout_address = destinationAddress;
       target.status = "ACCEPTED";
@@ -268,7 +263,7 @@ class APIClient {
 
   async placeBet(data) {
     const markets = await this.getMarkets();
-    const m = markets.find(m => (m.market_id || m.id) === data.market_id);
+    const m = markets.find(m => (m.market_id || m.id) == data.market_id);
     if (m) {
       if (data.side.toUpperCase() === 'YES') m.total_yes += data.amount;
       else m.total_no += data.amount;
@@ -279,7 +274,7 @@ class APIClient {
 
   async resolveMarket(marketId) {
     const markets = await this.getMarkets();
-    const m = markets.find(m => (m.market_id || m.id) === marketId);
+    const m = markets.find(m => (m.market_id || m.id) == marketId);
     if (m) {
       m.outcome = "YES";
       m.confidence = 95;

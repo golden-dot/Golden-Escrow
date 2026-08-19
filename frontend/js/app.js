@@ -11,14 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const ESCROW_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ESCROW_CONTRACT}`;
   const ORACLE_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ORACLE_CONTRACT}`;
 
-  // FORCE CLEAR ANY LEGACY DEMO BOUNTIES IN BROWSER STORAGE ON STARTUP
-  try {
-    const raw = localStorage.getItem('intellex_global_escrows');
-    if (raw && (raw.includes('0xAliceClient') || raw.includes('0xDevinClient') || raw.includes('DEX Router') || raw.includes('WebSocket'))) {
-      localStorage.removeItem('intellex_global_escrows');
-    }
-  } catch (e) {}
-
   // Registered Accounts Repository
   let registeredAccounts = [];
   try {
@@ -452,17 +444,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Load & Render Escrows (Filter out legacy demo items)
+  // Load & Render Escrows
   async function loadEscrows() {
     try {
       let escrows = await API.getEscrows();
       if (Array.isArray(escrows)) {
         escrows = escrows.filter(e => {
           if (!e) return false;
-          const clientStr = (e.client || '').toLowerCase();
-          const titleStr = (e.title || '').toLowerCase();
-          if (clientStr.includes('alice') || clientStr.includes('devin') || clientStr.includes('0xaliceclient') || clientStr.includes('0xdevinclient')) return false;
-          if (titleStr.includes('dex router security audit') || titleStr.includes('python sdk async websocket')) return false;
+          if (e.client === '0xAliceClient' || e.client === '0xDevinClient') return false;
           return true;
         });
       } else {
@@ -510,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Open Deposit Required Modal for unpaid task
   window.openDepositRequiredModal = (escrowId) => {
-    const escrow = state.escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    const escrow = state.escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (!escrow) return;
 
     state.pendingDepositEscrowId = escrowId;
@@ -533,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const isClient = state.currentRole === 'client';
 
     const countAll = state.escrows.filter(e => e.payment_received || (e.client && (e.client.toLowerCase() === currentUser || e.client.toLowerCase() === currentEmail))).length;
-    const countOpen = state.escrows.filter(e => (e.status === 'OPEN_FOR_CLAIM' || (e.contractor && e.contractor.startsWith('0x0000'))) && e.payment_received).length;
+    const countOpen = state.escrows.filter(e => (e.status === 'OPEN_FOR_CLAIM' || !e.contractor || e.contractor.startsWith('0x0000')) && e.payment_received).length;
     const countMy = state.escrows.filter(e => 
       (e.client && (e.client.toLowerCase() === currentUser || e.client.toLowerCase() === currentEmail)) || 
       (e.contractor && (e.contractor.toLowerCase() === currentUser || e.contractor.toLowerCase() === currentEmail))
@@ -569,13 +558,15 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (state.activeFilter === 'open') {
-        return (escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'))) && escrow.payment_received;
+        // OPEN BOUNTIES TAB: Show all paid bounties that are open for claim or unassigned
+        return escrow.payment_received && (escrow.status === 'OPEN_FOR_CLAIM' || !escrow.contractor || escrow.contractor.startsWith('0x0000') || escrow.contractor === '0x0000000000000000000000000000000000000000');
       } else if (state.activeFilter === 'my-jobs') {
         return isCreatorOfTask || (escrow.contractor && (escrow.contractor.toLowerCase() === currentUser || escrow.contractor.toLowerCase() === currentEmail));
       } else if (state.activeFilter === 'completed') {
         return escrow.status === 'ACCEPTED' || escrow.status === 'COMPLETED';
       }
 
+      // 'all' FILTER: SHOW ALL PUBLICIZED BOUNTIES (AND UNPAID BOUNTIES FOR CREATOR)
       return true;
     });
 
@@ -594,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'escrow-card';
 
       const id = escrow.escrow_id || escrow.id;
-      const isOpenForClaim = (escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'))) && escrow.payment_received;
+      const isOpenForClaim = (escrow.status === 'OPEN_FOR_CLAIM' || !escrow.contractor || escrow.contractor.startsWith('0x0000')) && escrow.payment_received;
       const isAwaitingDeposit = !escrow.payment_received || escrow.status === 'AWAITING_DEPOSIT';
       const statusClass = isAwaitingDeposit ? 'pending' : (isOpenForClaim ? 'open_for_claim' : (escrow.status === 'ACCEPTED' ? 'approved' : (escrow.status ? escrow.status.toLowerCase() : 'pending')));
 
@@ -683,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const contractorDisplay = isOpenForClaim 
         ? '<span style="color:var(--primary);font-weight:700;">Open for Claim</span>' 
-        : (escrow.contractor ? `${escrow.contractor}` : 'Unassigned');
+        : (escrow.contractor && !escrow.contractor.startsWith('0x0000') ? `${escrow.contractor}` : 'Unassigned');
 
       const clientDisplay = escrow.client ? escrow.client : 'Client';
 
@@ -738,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Claim Bounty Handler
   window.claimEscrowBounty = async (escrowId, btnElement) => {
-    const escrow = state.escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    const escrow = state.escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (escrow) {
       const clientOwnerLower = (escrow.client || '').toLowerCase();
       const currentUser = (state.currentUsername || '').toLowerCase();
@@ -1069,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }, 1500);
         } else {
           // REJECTED -> Reset to OPEN_FOR_CLAIM
-          const target = state.escrows.find(e => (e.escrow_id || e.id) === escrowId);
+          const target = state.escrows.find(e => (e.escrow_id || e.id) == escrowId);
           if (target) {
             target.status = 'OPEN_FOR_CLAIM';
             target.contractor = '0x0000000000000000000000000000000000000000';
@@ -1091,7 +1082,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // DEVELOPER PAYOUT ADDRESS PROMPT MODAL HANDLER
   window.promptPayoutAddressModal = (escrowId) => {
     state.activePayoutEscrowId = escrowId;
-    const escrow = state.escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    const escrow = state.escrows.find(e => (e.escrow_id || e.id) == escrowId);
 
     const scoreTag = document.getElementById('payout-score-tag');
     const amountTag = document.getElementById('payout-amount-tag');
@@ -1141,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // View Resolution Report
   window.viewResolutionReport = (escrowId) => {
-    const escrow = state.escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    const escrow = state.escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (!escrow) return;
 
     const body = document.getElementById('report-modal-body');
@@ -1217,6 +1208,13 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Resolution error: ' + err.message, 'danger');
     }
   };
+
+  // Live polling for cross-device updates every 4 seconds
+  setInterval(() => {
+    if (state.currentScreen === 'dashboard') {
+      loadEscrows();
+    }
+  }, 4000);
 
   // INITIALIZE SESSION RESTORATION ON PAGE REFRESH
   loadNodeStatus();
