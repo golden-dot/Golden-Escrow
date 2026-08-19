@@ -1,16 +1,35 @@
 /**
- * api.js - GenLayer Intellex Protocol API Client / Static Vercel Bridge
- * Works 100% standalone on Vercel without requiring a local backend server!
+ * api.js - GenLayer Intellex Protocol API Client / Shared Global Storage Bridge
+ * Persists escrows and markets globally across logins, logouts, and page refreshes!
  */
 
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
-// In-Memory Local Datastore - Empty Fresh Start
-const localStore = {
-  escrows: [],
-  markets: []
-};
+// Load or Initialize Global Storage across all user sessions
+function getGlobalEscrows() {
+  try {
+    return JSON.parse(localStorage.getItem('intellex_global_escrows')) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveGlobalEscrows(escrows) {
+  localStorage.setItem('intellex_global_escrows', JSON.stringify(escrows));
+}
+
+function getGlobalMarkets() {
+  try {
+    return JSON.parse(localStorage.getItem('intellex_global_markets')) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveGlobalMarkets(markets) {
+  localStorage.setItem('intellex_global_markets', JSON.stringify(markets));
+}
 
 class APIClient {
   constructor() {
@@ -47,26 +66,15 @@ class APIClient {
     } catch (e) {
       // Fallback
     }
-    return localStore.escrows;
+    return getGlobalEscrows();
   }
 
   async createEscrow(data) {
-    try {
-      if (this.baseUrl) {
-        const res = await fetch(`${this.baseUrl}/api/escrows`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(data)
-        });
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    const newId = localStore.escrows.length + 1;
+    const escrows = getGlobalEscrows();
+    const newId = escrows.length + 1;
     const newEscrow = {
       escrow_id: newId,
-      client: data.client || "0xUserClientAddress",
+      client: data.client || "Client",
       contractor: data.contractor || "0x0000000000000000000000000000000000000000",
       title: data.title,
       description: data.description,
@@ -81,73 +89,52 @@ class APIClient {
       decision: "",
       score: 0,
       payment_received: true,
-      payout_address: ""
+      payout_address: "",
+      createdAt: new Date().toISOString()
     };
-    localStore.escrows.push(newEscrow);
+    escrows.push(newEscrow);
+    saveGlobalEscrows(escrows);
     return { success: true, escrow_id: newId, escrow: newEscrow };
   }
 
+  async deleteEscrow(escrowId) {
+    let escrows = getGlobalEscrows();
+    escrows = escrows.filter(e => (e.escrow_id || e.id) !== escrowId);
+    saveGlobalEscrows(escrows);
+    return { success: true, message: `Escrow #${escrowId} deleted` };
+  }
+
   async joinEscrow(data) {
-    try {
-      if (this.baseUrl) {
-        const res = await fetch(`${this.baseUrl}/api/escrows/join`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(data)
-        });
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    const target = localStore.escrows.find(e => e.escrow_id === data.escrow_id);
+    const escrows = getGlobalEscrows();
+    const target = escrows.find(e => (e.escrow_id || e.id) === data.escrow_id);
     if (target) {
-      target.contractor = data.participant_address || "0xContractorBuilderAddress";
+      target.contractor = data.participant_address || "Builder";
       target.status = "ACTIVE";
+      saveGlobalEscrows(escrows);
     }
     return { success: true, message: "Claimed bounty as contractor" };
   }
 
   async submitDeliverable(data) {
-    try {
-      if (this.baseUrl) {
-        const res = await fetch(`${this.baseUrl}/api/escrows/submit-deliverable`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(data)
-        });
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    const target = localStore.escrows.find(e => e.escrow_id === data.escrow_id);
+    const escrows = getGlobalEscrows();
+    const target = escrows.find(e => (e.escrow_id || e.id) === data.escrow_id);
     if (target) {
       target.deliverable_url = data.deliverable_url;
       target.deliverable_notes = data.deliverable_notes;
       target.status = "SUBMITTED";
+      saveGlobalEscrows(escrows);
     }
     return { success: true, message: "Deliverable submitted" };
   }
 
   async resolveMilestone(escrowId) {
-    try {
-      if (this.baseUrl) {
-        const res = await fetch(`${this.baseUrl}/api/escrows/resolve-milestone`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ escrow_id: escrowId })
-        });
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    const target = localStore.escrows.find(e => e.escrow_id === escrowId);
+    const escrows = getGlobalEscrows();
+    const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
     if (target) {
       target.decision = "ACCEPT";
       target.score = 92;
       target.status = "VERIFIED_AWAITING_PAYOUT_ADDRESS";
+      saveGlobalEscrows(escrows);
     }
     return {
       success: true,
@@ -165,10 +152,12 @@ class APIClient {
   }
 
   async releasePayout(escrowId, destinationAddress) {
-    const target = localStore.escrows.find(e => e.escrow_id === escrowId);
+    const escrows = getGlobalEscrows();
+    const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
     if (target) {
       target.payout_address = destinationAddress;
       target.status = "ACCEPTED";
+      saveGlobalEscrows(escrows);
     }
     return {
       success: true,
@@ -178,34 +167,15 @@ class APIClient {
   }
 
   async getMarkets() {
-    try {
-      if (this.baseUrl) {
-        const res = await fetch(`${this.baseUrl}/api/markets`);
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    return localStore.markets;
+    return getGlobalMarkets();
   }
 
   async createMarket(data) {
-    try {
-      if (this.baseUrl) {
-        const res = await fetch(`${this.baseUrl}/api/markets`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(data)
-        });
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    const newId = localStore.markets.length + 1;
+    const markets = getGlobalMarkets();
+    const newId = markets.length + 1;
     const newMarket = {
       market_id: newId,
-      creator: data.creator || "0xUserCreatorAddress",
+      creator: data.creator || "Predictor",
       question: data.question,
       category: data.category,
       sources: data.resolution_sources ? data.resolution_sources.join(',') : '',
@@ -214,51 +184,33 @@ class APIClient {
       total_no: 0,
       status: "OPEN",
       outcome: "",
-      confidence: 0
+      confidence: 0,
+      createdAt: new Date().toISOString()
     };
-    localStore.markets.push(newMarket);
+    markets.push(newMarket);
+    saveGlobalMarkets(markets);
     return { success: true, market_id: newId, market: newMarket };
   }
 
   async placeBet(data) {
-    try {
-      if (this.baseUrl) {
-        const res = await fetch(`${this.baseUrl}/api/markets/bet`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(data)
-        });
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    const m = localStore.markets.find(m => m.market_id === data.market_id);
+    const markets = getGlobalMarkets();
+    const m = markets.find(m => (m.market_id || m.id) === data.market_id);
     if (m) {
       if (data.side.toUpperCase() === 'YES') m.total_yes += data.amount;
       else m.total_no += data.amount;
+      saveGlobalMarkets(markets);
     }
     return { success: true };
   }
 
   async resolveMarket(marketId) {
-    try {
-      if (this.baseUrl) {
-        const res = await fetch(`${this.baseUrl}/api/markets/resolve`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ market_id: marketId })
-        });
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    const m = localStore.markets.find(m => m.market_id === marketId);
+    const markets = getGlobalMarkets();
+    const m = markets.find(m => (m.market_id || m.id) === marketId);
     if (m) {
       m.outcome = "YES";
       m.confidence = 95;
       m.status = "RESOLVED";
+      saveGlobalMarkets(markets);
     }
     return {
       success: true,
