@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
     activeTab: 'escrows',
     searchQuery: '',
     activeFilter: 'all',
-    selectedContractCode: 'IntelligentEscrow',
     activePayoutEscrowId: null
   };
 
@@ -287,8 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
         title: 'DAO ARBITER',
         welcome: `Welcome, ${username} (DAO Governance Arbiter)`,
         desc: 'Stake GEN tokens in committee validator pools, monitor equivalence execution, and govern protocol dispute reserves.',
-        primaryAction: 'View Intelligent Contracts',
-        primaryActionTab: 'contracts'
+        primaryAction: 'View Escrow Marketplace',
+        primaryActionTab: 'escrows'
       },
       predictor: {
         title: 'PREDICTOR',
@@ -322,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (profile.primaryActionTab === 'oracle') {
           document.querySelector('.nav-tab[data-tab="oracle"]').click();
         } else {
-          document.querySelector('.nav-tab[data-tab="contracts"]').click();
+          document.querySelector('.nav-tab[data-tab="escrows"]').click();
         }
       };
     }
@@ -345,7 +344,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tabs.forEach(t => t.classList.remove('active'));
       tabContents.forEach(c => c.classList.remove('active'));
       tab.classList.add('active');
-      document.getElementById(`${target}-tab`).classList.add('active');
+      const targetEl = document.getElementById(`${target}-tab`);
+      if (targetEl) targetEl.classList.add('active');
       state.activeTab = target;
     });
   });
@@ -666,6 +666,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const openCreateMarketBtn = document.getElementById('open-create-market-btn');
+  if (openCreateMarketBtn) {
+    openCreateMarketBtn.addEventListener('click', () => {
+      document.getElementById('create-market-modal').classList.add('active');
+    });
+  }
+
   const assignmentSelect = document.getElementById('escrow-assignment-mode');
   const contractorWrapper = document.getElementById('contractor-input-wrapper');
   if (assignmentSelect && contractorWrapper) {
@@ -674,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Create Escrow Form (Client Deposit & Contract Receipt Confirmation)
+  // Create Escrow Form
   const createEscrowForm = document.getElementById('create-escrow-form');
   if (createEscrowForm) {
     createEscrowForm.addEventListener('submit', async (e) => {
@@ -712,6 +719,49 @@ document.addEventListener('DOMContentLoaded', () => {
           btn.disabled = false;
         }
         showToast('Failed to create escrow: ' + err.message, 'danger');
+      }
+    });
+  }
+
+  // Create Market Form
+  const createMarketForm = document.getElementById('create-market-form');
+  if (createMarketForm) {
+    createMarketForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = createMarketForm.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.classList.add('btn-loading');
+        btn.disabled = true;
+      }
+
+      try {
+        const question = document.getElementById('market-question').value;
+        const category = document.getElementById('market-category').value;
+        const criteria = document.getElementById('market-criteria').value;
+        const sourcesText = document.getElementById('market-sources').value;
+        const sources = sourcesText ? sourcesText.split('\n').filter(s => s.trim().length > 0) : [];
+
+        const res = await API.createMarket({
+          creator: state.currentWallet || "0xUserCreatorAddress",
+          question: question,
+          category: category,
+          resolution_criteria: criteria,
+          resolution_sources: sources
+        });
+
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        window.closeModals();
+        showToast(`Truth Market #${res.market_id} deployed on GenLayer Bradbury!`, 'success');
+        loadMarkets();
+      } catch (err) {
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        showToast('Failed to create market: ' + err.message, 'danger');
       }
     });
   }
@@ -936,25 +986,6 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('Resolution error: ' + err.message, 'danger');
     }
   };
-
-  // Code Inspector
-  const codeTabs = document.querySelectorAll('.code-tab-btn');
-  const codeBody = document.getElementById('contract-code-body');
-
-  function renderContractCode(contractName) {
-    if (!window.GENLAYER_CONTRACTS) return;
-    codeBody.textContent = window.GENLAYER_CONTRACTS[contractName] || '# Contract code loading...';
-  }
-
-  codeTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      codeTabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      renderContractCode(tab.dataset.contract);
-    });
-  });
-
-  renderContractCode('IntelligentEscrow');
 
   // Initial load status
   loadNodeStatus();

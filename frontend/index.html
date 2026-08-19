@@ -147,9 +147,6 @@
         <button class="nav-tab" data-tab="oracle">
           TruthForge Oracle
         </button>
-        <button class="nav-tab" data-tab="contracts">
-          Intelligent Contracts
-        </button>
       </nav>
 
       <!-- Network, Theme Toggle, Profile Badge, Logout -->
@@ -274,35 +271,12 @@
           <!-- Dynamic Markets -->
         </div>
       </section>
-
-      <!-- TAB 3: INTELLIGENT CONTRACTS INSPECTOR -->
-      <section class="tab-content" id="contracts-tab">
-        <div class="section-header">
-          <div class="section-title">
-            GenLayer Intelligent Contracts Explorer
-          </div>
-          <span style="font-size:0.85rem;color:var(--text-muted);">
-            Real GenVM Python Contracts for GenLayer Bradbury / Studio v0.2.16
-          </span>
-        </div>
-
-        <div class="code-viewer-container">
-          <div class="code-header">
-            <div class="code-tabs">
-              <button class="code-tab-btn active" data-contract="IntelligentEscrow">IntelligentEscrow.py</button>
-              <button class="code-tab-btn" data-contract="TruthForgeOracle">TruthForgeOracle.py</button>
-            </div>
-            <span style="font-size:0.75rem;font-family:var(--font-mono);color:var(--primary);">Python 3.14 / GenVM 0.2.16</span>
-          </div>
-          <pre class="code-body" id="contract-code-body"></pre>
-        </div>
-      </section>
     </main>
 
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- MODAL 1: CREATE ESCROW (WITH CONTRACT COPY ADDRESS OPTION) -->
+    <!-- MODAL 1: CREATE ESCROW -->
     <div class="modal-overlay" id="create-escrow-modal">
       <div class="modal-card">
         <div class="modal-header">
@@ -546,7 +520,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">Verified Resolution Sources (URLs, 1 per line)</label>
-            <textarea class="form-control" id="market-sources" rows="3" required></textarea>
+            <textarea class="form-control" id="market-sources" rows="3" placeholder="https://..." required></textarea>
           </div>
           <button type="submit" class="action-btn" style="width:100%;margin-top:1rem;">
             Deploy Truth Market
