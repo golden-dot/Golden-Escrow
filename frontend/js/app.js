@@ -553,8 +553,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const isBuilder = state.currentRole === 'builder';
     const isClient = state.currentRole === 'client';
 
-    const countAll = state.escrows.filter(e => e.payment_received || (e.client && (e.client.toLowerCase() === currentUser || e.client.toLowerCase() === currentEmail))).length;
-    const countOpen = state.escrows.filter(e => (e.status === 'OPEN_FOR_CLAIM' || !e.contractor || e.contractor.startsWith('0x0000')) && e.payment_received).length;
+    const countAll = state.escrows.filter(e => e.payment_received || e.status === 'OPEN_FOR_CLAIM' || (e.client && (e.client.toLowerCase() === currentUser || e.client.toLowerCase() === currentEmail))).length;
+    const countOpen = state.escrows.filter(e => (e.status === 'OPEN_FOR_CLAIM' || !e.contractor || e.contractor.startsWith('0x0000')) && (e.payment_received || e.status === 'OPEN_FOR_CLAIM')).length;
     const countMy = state.escrows.filter(e => 
       (e.client && (e.client.toLowerCase() === currentUser || e.client.toLowerCase() === currentEmail)) || 
       (e.contractor && (e.contractor.toLowerCase() === currentUser || e.contractor.toLowerCase() === currentEmail))
@@ -575,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const unpublicizedCreatedBounties = state.escrows.filter(e => {
       const cLower = (e.client || '').toLowerCase();
       const isOwner = (cLower === currentUser || cLower === currentEmail);
-      return isOwner && (!e.payment_received || e.status === 'AWAITING_DEPOSIT');
+      return isOwner && (!e.payment_received && e.status !== 'OPEN_FOR_CLAIM');
     });
 
     if (isClient && unpublicizedCreatedBounties.length > 0) {
@@ -606,13 +606,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const isCreatorOfTask = (clientOwnerLower === currentUser || clientOwnerLower === currentEmail);
 
       // UNPAID BOUNTIES ARE ONLY VISIBLE TO CREATOR CLIENT UNTIL DEPOSIT SENT
-      if (!escrow.payment_received && !isCreatorOfTask) {
+      if (!escrow.payment_received && !isCreatorOfTask && escrow.status !== 'OPEN_FOR_CLAIM') {
         return false;
       }
 
       if (state.activeFilter === 'open') {
-        // OPEN BOUNTIES TAB: Show all paid bounties that are open for claim or unassigned
-        return escrow.payment_received && (escrow.status === 'OPEN_FOR_CLAIM' || !escrow.contractor || escrow.contractor.startsWith('0x0000') || escrow.contractor === '0x0000000000000000000000000000000000000000');
+        // OPEN BOUNTIES TAB: Show all paid or publicized bounties open for claim
+        return escrow.status === 'OPEN_FOR_CLAIM' || escrow.payment_received === true;
       } else if (state.activeFilter === 'my-jobs') {
         return isCreatorOfTask || (escrow.contractor && (escrow.contractor.toLowerCase() === currentUser || escrow.contractor.toLowerCase() === currentEmail));
       } else if (state.activeFilter === 'completed') {
@@ -637,8 +637,8 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'escrow-card';
 
       const id = escrow.escrow_id || escrow.id;
-      const isOpenForClaim = (escrow.status === 'OPEN_FOR_CLAIM' || !escrow.contractor || escrow.contractor.startsWith('0x0000')) && escrow.payment_received;
-      const isAwaitingDeposit = !escrow.payment_received || escrow.status === 'AWAITING_DEPOSIT';
+      const isOpenForClaim = (escrow.status === 'OPEN_FOR_CLAIM' || !escrow.contractor || escrow.contractor.startsWith('0x0000')) && (escrow.payment_received || escrow.status === 'OPEN_FOR_CLAIM');
+      const isAwaitingDeposit = (!escrow.payment_received && escrow.status !== 'OPEN_FOR_CLAIM') || escrow.status === 'AWAITING_DEPOSIT';
       const statusClass = isAwaitingDeposit ? 'pending' : (isOpenForClaim ? 'open_for_claim' : (escrow.status === 'ACCEPTED' ? 'approved' : (escrow.status ? escrow.status.toLowerCase() : 'pending')));
 
       const clientOwnerLower = (escrow.client || '').toLowerCase();
@@ -703,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
         actionBtnHtml = `<button class="secondary-btn btn-sm" onclick="window.viewResolutionReport(${id})">View AI Verification Report</button>`;
       }
 
-      let depositBadgeSnippet = escrow.payment_received ? `
+      let depositBadgeSnippet = (escrow.payment_received || escrow.status === 'OPEN_FOR_CLAIM') ? `
         <div style="margin-top:8px;padding:6px 10px;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.2);border-radius:6px;font-size:0.75rem;color:var(--success);">
           Contract Payment Receipt: ${escrow.amount} GEN Received & Locked in Vault
         </div>
@@ -1261,12 +1261,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Live polling for cross-device updates every 3 seconds
+  // LIVE AUTO-REFRESH POLLING EVERY 1 SECOND (1000ms)
   setInterval(() => {
     if (state.currentScreen === 'dashboard') {
       loadEscrows();
     }
-  }, 3000);
+  }, 1000);
 
   // INITIALIZE SESSION RESTORATION ON PAGE REFRESH
   loadNodeStatus();

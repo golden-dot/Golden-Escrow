@@ -1,6 +1,6 @@
 /**
  * api.js - GenLayer Intellex Protocol API Client & Persistence Engine
- * Enables real-time sync for authentic Client-created bounties (Unlimited bounties per client)
+ * Enables real-time sync for authentic Client-created bounties (1-second polling & BroadcastChannel)
  */
 
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
@@ -116,7 +116,7 @@ class APIClient {
     return await fetchEscrowsData();
   }
 
-  // Create Escrow Bounty (Supports direct publicizing or draft mode)
+  // Create Escrow Bounty
   async createEscrow(data) {
     const escrows = await fetchEscrowsData();
     const maxId = escrows.reduce((max, e) => Math.max(max, parseInt(e.escrow_id || e.id || 0)), 0);
