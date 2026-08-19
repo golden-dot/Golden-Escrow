@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // App State
   const state = {
-    currentScreen: 'login', // 'login' | 'role' | 'dashboard'
+    currentScreen: 'login',
     currentRole: localStorage.getItem('intellex_role') || 'client',
     currentUsername: localStorage.getItem('intellex_username') || 'Alice',
     currentWallet: localStorage.getItem('intellex_wallet') || '0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33',
@@ -46,7 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
     activeTab: 'escrows',
     searchQuery: '',
     activeFilter: 'all',
-    selectedContractCode: 'IntelligentEscrow'
+    selectedContractCode: 'IntelligentEscrow',
+    activePayoutEscrowId: null
   };
 
   // Screen Switcher Helper
@@ -75,7 +76,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 4000);
   }
 
-  // SCREEN 1: LOGIN FORM HANDLER WITH SPINNER
+  // SCREEN 1: AUTH TAB SWITCHER (LOG IN VS CREATE ACCOUNT)
+  window.switchAuthTab = (tab) => {
+    const loginBtn = document.getElementById('auth-tab-login');
+    const signupBtn = document.getElementById('auth-tab-signup');
+    const loginForm = document.getElementById('auth-login-form');
+    const signupForm = document.getElementById('auth-signup-form');
+
+    if (tab === 'signup') {
+      loginBtn.classList.remove('active');
+      signupBtn.classList.add('active');
+      loginForm.style.display = 'none';
+      signupForm.style.display = 'block';
+    } else {
+      signupBtn.classList.remove('active');
+      loginBtn.classList.add('active');
+      signupForm.style.display = 'none';
+      loginForm.style.display = 'block';
+    }
+  };
+
+  // AUTH FORM 1: LOG IN
   const loginForm = document.getElementById('auth-login-form');
   const loginSubmitBtn = document.getElementById('login-submit-btn');
 
@@ -91,16 +112,34 @@ document.addEventListener('DOMContentLoaded', () => {
         loginSubmitBtn.classList.remove('btn-loading');
         loginSubmitBtn.disabled = false;
 
-        if (identifier.includes('@')) {
-          state.currentUsername = identifier.split('@')[0];
-        } else if (identifier.startsWith('0x')) {
-          state.currentWallet = identifier;
-          state.currentUsername = 'User ' + identifier.slice(2, 6);
-        } else {
-          state.currentUsername = identifier;
-        }
+        state.currentUsername = identifier.includes('@') ? identifier.split('@')[0] : identifier;
 
         showToast(`Authenticated as ${state.currentUsername}`, 'success');
+        showScreen('role');
+      }, 700);
+    });
+  }
+
+  // AUTH FORM 2: CREATE NEW ACCOUNT
+  const signupForm = document.getElementById('auth-signup-form');
+  const signupSubmitBtn = document.getElementById('signup-submit-btn');
+
+  if (signupForm) {
+    signupForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fullName = document.getElementById('signup-fullname').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+
+      signupSubmitBtn.classList.add('btn-loading');
+      signupSubmitBtn.disabled = true;
+
+      setTimeout(() => {
+        signupSubmitBtn.classList.remove('btn-loading');
+        signupSubmitBtn.disabled = false;
+
+        state.currentUsername = fullName || email.split('@')[0];
+
+        showToast(`Account created successfully for ${state.currentUsername}!`, 'success');
         showScreen('role');
       }, 800);
     });
@@ -145,14 +184,14 @@ document.addEventListener('DOMContentLoaded', () => {
       builder: {
         title: 'BUILDER',
         welcome: `Welcome, ${state.currentUsername} (Builder & Contractor)`,
-        desc: 'Browse open community bounties, claim milestone tasks, submit deliverable URLs, and receive instant cryptographic disbursements verified by GenVM AI consensus.',
+        desc: 'Browse open community bounties, claim milestone tasks, submit deliverable URLs, verify work via GenVM AI, and enter your destination payout address to receive disbursements.',
         primaryAction: 'Browse Open Tasks to Claim',
         primaryActionTab: 'open-bounties'
       },
       client: {
         title: 'CLIENT',
         welcome: `Welcome, ${state.currentUsername} (Client & Buyer)`,
-        desc: 'Deploy AI-governed milestone escrows, fund vaults, and let GenVM automatically verify contractor deliverables with zero dispute delays.',
+        desc: 'Deploy AI-governed milestone escrows, deposit project funds into the contract, and receive automated payment receipt confirmations locked until AI task verification completes.',
         primaryAction: '+ Deploy New Escrow Vault',
         primaryActionTab: 'create-escrow'
       },
@@ -360,9 +399,21 @@ document.addEventListener('DOMContentLoaded', () => {
             Trigger GenVM AI Arbitration
           </button>
         `;
+      } else if (escrow.status === 'VERIFIED_AWAITING_PAYOUT_ADDRESS') {
+        actionBtnHtml = `
+          <button class="action-btn btn-sm" style="background:var(--accent-purple);" onclick="window.promptPayoutAddressModal(${id})">
+            Enter Payout Destination Address
+          </button>
+        `;
       } else if (escrow.status === 'ACCEPTED' || escrow.status === 'REJECTED') {
         actionBtnHtml = `<button class="secondary-btn btn-sm" onclick="window.viewResolutionReport(${id})">View AI Verification Report</button>`;
       }
+
+      let depositBadgeSnippet = escrow.payment_received ? `
+        <div style="margin-top:8px;padding:6px 10px;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.2);border-radius:6px;font-size:0.75rem;color:var(--success);">
+          Contract Payment Receipt: ${escrow.amount} GEN Received & Locked in Vault
+        </div>
+      ` : '';
 
       let resolutionSnippet = '';
       if (escrow.decision) {
@@ -370,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="margin-top:10px;padding:10px;background:rgba(var(--primary-rgb), 0.08);border:1px solid rgba(var(--primary-rgb), 0.2);border-radius:6px;">
             <div style="font-size:0.85rem;font-weight:700;">Verdict: ${escrow.decision} (Score: ${escrow.score}/100)</div>
             <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">Verified by GenVM Validator Committee (5/5 Agreed).</div>
+            ${escrow.payout_address ? `<div style="font-size:0.72rem;color:var(--primary);margin-top:4px;font-family:var(--font-mono);">Disbursed to: ${escrow.payout_address}</div>` : ''}
           </div>
         `;
       }
@@ -388,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${escrow.category ? `<span style="margin-left:6px;font-size:0.7rem;color:var(--primary);">${escrow.category}</span>` : ''}
             </div>
             <span class="status-badge ${isOpenForClaim ? 'open_for_claim' : (escrow.status === 'ACCEPTED' ? 'approved' : statusClass)}">
-              ${isOpenForClaim ? 'OPEN TASK' : escrow.status}
+              ${isOpenForClaim ? 'OPEN TASK' : escrow.status.replace(/_/g, ' ')}
             </span>
           </div>
           <h3 class="card-title">${escrow.title}</h3>
@@ -417,6 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="font-size:0.82rem;color:var(--text-main);margin-bottom:4px;"><strong>Requirements:</strong> ${escrow.requirements}</div>
             <div style="font-size:0.78rem;color:var(--text-muted);"><strong>AI Criteria:</strong> ${escrow.criteria}</div>
             ${escrow.deliverable_url ? `<div style="font-size:0.75rem;margin-top:6px;font-family:var(--font-mono);color:var(--primary);">Deliverable: ${escrow.deliverable_url}</div>` : ''}
+            ${depositBadgeSnippet}
             ${resolutionSnippet}
           </div>
         </div>
@@ -531,15 +584,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Create Escrow Form
+  // Create Escrow Form (Client Deposit & Contract Receipt Confirmation)
   document.getElementById('create-escrow-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('create-escrow-submit-btn');
     btn.classList.add('btn-loading');
     btn.disabled = true;
 
+    const amount = parseFloat(document.getElementById('escrow-amount').value);
+
     try {
-      await API.createEscrow({
+      const res = await API.createEscrow({
         client: state.currentWallet,
         contractor: assignmentSelect.value === 'assigned' ? document.getElementById('escrow-contractor').value : '0x0000000000000000000000000000000000000000',
         title: document.getElementById('escrow-title').value,
@@ -547,13 +602,13 @@ document.addEventListener('DOMContentLoaded', () => {
         category: document.getElementById('escrow-category').value,
         requirements: document.getElementById('escrow-requirements').value,
         criteria: document.getElementById('escrow-criteria').value,
-        amount: parseFloat(document.getElementById('escrow-amount').value),
+        amount: amount,
         quality_threshold: 80
       });
       btn.classList.remove('btn-loading');
       btn.disabled = false;
       window.closeModals();
-      showToast('Intelligent Escrow deployed successfully!', 'success');
+      showToast(`Payment Receipt Confirmed! ${amount} GEN received and locked in GenLayer Escrow Vault #${res.escrow_id}.`, 'success');
       loadEscrows();
     } catch (err) {
       btn.classList.remove('btn-loading');
@@ -588,8 +643,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // AI Arbitration Visualizer Step Sequence with Loading Spinners
+  // AI Arbitration Visualizer Step Sequence
   window.triggerAIArbitration = async (escrowId) => {
+    state.activePayoutEscrowId = escrowId;
     const modal = document.getElementById('ai-arbitration-modal');
     modal.classList.add('active');
 
@@ -636,15 +692,59 @@ document.addEventListener('DOMContentLoaded', () => {
         steps[4].classList.add('active');
         steps[4].classList.add('completed');
 
-        statusText.textContent = `Consensus Proven! Decision: ${res.decision} (Score: 92/100). Payout released.`;
-        showToast(`GenLayer AI Arbitration Finalized: ${res.decision}!`, 'success');
+        statusText.textContent = `Consensus Proven! Task Verified (Score: 92/100). Opening Payout Destination Address Prompt...`;
         loadEscrows();
-        setTimeout(() => window.closeModals(), 2200);
+        setTimeout(() => {
+          window.closeModals();
+          window.promptPayoutAddressModal(escrowId);
+        }, 1500);
       } catch (err) {
         statusText.textContent = `Execution error: ${err.message}`;
       }
     }, 4000);
   };
+
+  // DEVELOPER PAYOUT ADDRESS PROMPT MODAL HANDLER
+  window.promptPayoutAddressModal = (escrowId) => {
+    state.activePayoutEscrowId = escrowId;
+    const escrow = state.escrows.find(e => (e.escrow_id || e.id) === escrowId);
+
+    const scoreTag = document.getElementById('payout-score-tag');
+    const amountTag = document.getElementById('payout-amount-tag');
+
+    if (scoreTag) scoreTag.textContent = escrow ? (escrow.score || 92) : 92;
+    if (amountTag) amountTag.textContent = `${escrow ? escrow.amount : 500} GEN`;
+
+    document.getElementById('payout-address-modal').classList.add('active');
+  };
+
+  // Submit Developer Payout Address Form
+  document.getElementById('payout-address-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('confirm-payout-btn');
+    const destAddr = document.getElementById('payout-destination-address').value.trim();
+
+    if (!destAddr) {
+      showToast('Please enter a valid payout destination address', 'danger');
+      return;
+    }
+
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+
+    try {
+      const res = await API.releasePayout(state.activePayoutEscrowId, destAddr);
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
+      window.closeModals();
+      showToast(`Payment disbursed! Escrow funds sent to address ${destAddr}`, 'success');
+      loadEscrows();
+    } catch (err) {
+      btn.classList.remove('btn-loading');
+      btn.disabled = false;
+      showToast('Payout error: ' + err.message, 'danger');
+    }
+  });
 
   // View Resolution Report
   window.viewResolutionReport = (escrowId) => {
@@ -661,6 +761,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <p style="font-size:0.9rem;margin-bottom:1rem;">
         GenVM Validator Committee evaluated requirements and verified submission against specified criteria. Decision: <strong>${escrow.decision || 'ACCEPT'}</strong>.
       </p>
+      ${escrow.payout_address ? `<div style="font-size:0.85rem;color:var(--success);margin-bottom:1rem;"><strong>Disbursed Payout Address:</strong> ${escrow.payout_address}</div>` : ''}
       <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--primary);">
         Deployed Escrow Contract: <a href="${ESCROW_STUDIO_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_ESCROW_CONTRACT}</a>
       </div>

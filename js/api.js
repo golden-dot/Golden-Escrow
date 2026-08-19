@@ -24,7 +24,9 @@ const localStore = {
       deliverable_notes: "Completed invariant fuzz testing suite. 15,000 iterations executed with zero equivalence breaks.",
       status: "SUBMITTED",
       decision: "",
-      score: 0
+      score: 0,
+      payment_received: true,
+      payout_address: ""
     },
     {
       escrow_id: 2,
@@ -41,7 +43,9 @@ const localStore = {
       deliverable_notes: "",
       status: "OPEN_FOR_CLAIM",
       decision: "",
-      score: 0
+      score: 0,
+      payment_received: true,
+      payout_address: ""
     },
     {
       escrow_id: 3,
@@ -58,7 +62,9 @@ const localStore = {
       deliverable_notes: "",
       status: "ACTIVE",
       decision: "",
-      score: 0
+      score: 0,
+      payment_received: true,
+      payout_address: ""
     }
   ],
   markets: [
@@ -158,7 +164,9 @@ class APIClient {
       deliverable_notes: "",
       status: (data.contractor && !data.contractor.startsWith('0x0000')) ? "ACTIVE" : "OPEN_FOR_CLAIM",
       decision: "",
-      score: 0
+      score: 0,
+      payment_received: true,
+      payout_address: ""
     };
     localStore.escrows.push(newEscrow);
     return { success: true, escrow_id: newId, escrow: newEscrow };
@@ -224,13 +232,13 @@ class APIClient {
     if (target) {
       target.decision = "ACCEPT";
       target.score = 92;
-      target.status = "ACCEPTED";
+      target.status = "VERIFIED_AWAITING_PAYOUT_ADDRESS";
     }
     return {
       success: true,
       decision: "ACCEPT",
       is_approved: true,
-      payout_released: target ? target.amount : 1200,
+      payout_released: 0,
       resolution: {
         verdict: "APPROVED",
         score: 92,
@@ -238,6 +246,19 @@ class APIClient {
         validators_agreed: 5,
         total_validators: 5
       }
+    };
+  }
+
+  async releasePayout(escrowId, destinationAddress) {
+    const target = localStore.escrows.find(e => e.escrow_id === escrowId);
+    if (target) {
+      target.payout_address = destinationAddress;
+      target.status = "ACCEPTED";
+    }
+    return {
+      success: true,
+      message: `Payout of ${target ? target.amount : 0} GEN disbursed to ${destinationAddress}`,
+      payout_address: destinationAddress
     };
   }
 

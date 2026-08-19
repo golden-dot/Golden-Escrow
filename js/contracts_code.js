@@ -34,6 +34,8 @@ class Escrow:
     status: str
     decision: str
     score: u256
+    payment_received: bool
+    payout_address: Address
 
 
 class IntelligentEscrow(gl.Contract):
@@ -66,6 +68,9 @@ class IntelligentEscrow(gl.Contract):
         if not criteria:
             raise Exception("Criteria cannot be empty")
 
+        if amount == u256(0):
+            raise Exception("Escrow deposit amount must be greater than zero")
+
         escrow_id = self.next_escrow_id
         is_open = contractor == Address("0x0000000000000000000000000000000000000000")
 
@@ -85,6 +90,8 @@ class IntelligentEscrow(gl.Contract):
             status="OPEN_FOR_CLAIM" if is_open else "ACTIVE",
             decision="",
             score=u256(0),
+            payment_received=True,
+            payout_address=Address("0x0000000000000000000000000000000000000000"),
         )
 
         self.next_escrow_id = escrow_id + u256(1)
@@ -246,11 +253,29 @@ Independently verify whether the deliverable meets requirements.
         escrow.score = u256(result["score"])
 
         if result["decision"] == "ACCEPT":
-            escrow.status = "ACCEPTED"
+            escrow.status = "VERIFIED_AWAITING_PAYOUT_ADDRESS"
         else:
             escrow.status = "REJECTED"
 
         return result["decision"]
+
+    @gl.public.write
+    def release_payout(
+        self,
+        escrow_id: u256,
+        destination_address: Address,
+    ) -> None:
+
+        escrow = self.escrows[escrow_id]
+
+        if escrow.status != "VERIFIED_AWAITING_PAYOUT_ADDRESS":
+            raise Exception("Escrow is not verified or payout address already executed")
+
+        if destination_address == Address("0x0000000000000000000000000000000000000000"):
+            raise Exception("Invalid destination payout address")
+
+        escrow.payout_address = destination_address
+        escrow.status = "ACCEPTED"
 
     @gl.public.view
     def get_escrow(
@@ -276,6 +301,8 @@ Independently verify whether the deliverable meets requirements.
             "status": escrow.status,
             "decision": escrow.decision,
             "score": escrow.score,
+            "payment_received": escrow.payment_received,
+            "payout_address": escrow.payout_address,
         }
 `,
 

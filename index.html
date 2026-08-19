@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- SCREEN 1: DEDICATED INITIAL LOGIN PAGE -->
+  <!-- SCREEN 1: DEDICATED INITIAL LOGIN & SIGN UP PAGE -->
   <div class="app-screen active" id="login-screen">
     <div class="auth-container">
       <div class="auth-card">
@@ -27,17 +27,21 @@
           </div>
         </div>
 
-        <h2 class="auth-title">Sign In to Intellex</h2>
-        <p class="auth-subtitle">Autonomous AI-Governed Escrow &amp; Intelligent Contracts</p>
+        <!-- Auth Navigation Tabs (Sign In / Sign Up) -->
+        <div class="auth-tabs">
+          <button class="auth-tab-btn active" id="auth-tab-login" onclick="window.switchAuthTab('login')">Log In</button>
+          <button class="auth-tab-btn" id="auth-tab-signup" onclick="window.switchAuthTab('signup')">Create Account</button>
+        </div>
 
+        <!-- FORM 1: LOG IN TO EXISTING ACCOUNT -->
         <form id="auth-login-form">
           <div class="form-group">
-            <label class="form-label">Email or Wallet Address</label>
-            <input type="text" class="form-control" id="login-identifier" value="alice@genlayer.io" placeholder="name@domain.com or 0x..." required>
+            <label class="form-label">Email or Username</label>
+            <input type="text" class="form-control" id="login-identifier" value="alice@genlayer.io" placeholder="name@domain.com" required>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Security Key / Password</label>
+            <label class="form-label">Password</label>
             <input type="password" class="form-control" id="login-password" value="••••••••••••" required>
           </div>
 
@@ -46,8 +50,30 @@
           </button>
         </form>
 
+        <!-- FORM 2: CREATE NEW ACCOUNT -->
+        <form id="auth-signup-form" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="signup-fullname" placeholder="e.g. Alice Smith" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-control" id="signup-email" placeholder="alice@company.com" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Choose Password</label>
+            <input type="password" class="form-control" id="signup-password" placeholder="Create a strong password" required>
+          </div>
+
+          <button type="submit" class="action-btn" id="signup-submit-btn" style="width:100%;margin-top:1.25rem;padding:12px;font-size:0.95rem;">
+            Create New Account
+          </button>
+        </form>
+
         <div style="margin-top:1.5rem;text-align:center;font-size:0.8rem;color:var(--text-dim);">
-          Demo Account pre-filled. Click Sign In to proceed.
+          Demo Account pre-filled. Switch tabs to Log In or Create Account.
         </div>
       </div>
     </div>
@@ -66,14 +92,14 @@
         <div class="role-card-option selected" id="role-card-builder" data-role="builder">
           <span class="role-tag-badge">BUILDER / CONTRACTOR</span>
           <h3>I want to Build &amp; Claim Bounties</h3>
-          <p>Search active tasks, claim community bounties, submit deliverable PRs, and receive instant payments verified by GenVM AI consensus.</p>
+          <p>Search active tasks, claim community bounties, submit deliverable PRs, verify tasks via AI, and receive payments to your chosen address.</p>
         </div>
 
         <!-- Option B: Client / Buyer -->
         <div class="role-card-option" id="role-card-client" data-role="client">
           <span class="role-tag-badge">CLIENT / BUYER</span>
           <h3>I want to Create &amp; Fund Escrow Vaults</h3>
-          <p>Post tasks, define strict LLM acceptance criteria, fund escrow vaults, and let GenLayer automatically verify contractor work.</p>
+          <p>Post tasks, define strict LLM acceptance criteria, deposit escrow funds, and receive contract payment confirmation receipts.</p>
         </div>
 
         <!-- Option C: DAO Arbiter -->
@@ -272,11 +298,11 @@
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- MODAL 1: CREATE ESCROW -->
+    <!-- MODAL 1: CREATE ESCROW (CLIENT DEPOSIT & RECEIPT ACKNOWLEDGMENT) -->
     <div class="modal-overlay" id="create-escrow-modal">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">Deploy Intelligent Escrow Vault</h3>
+          <h3 class="modal-title">Deploy Escrow &amp; Deposit Payment</h3>
           <button class="close-btn" onclick="window.closeModals()">&times;</button>
         </div>
         <form id="create-escrow-form">
@@ -311,7 +337,7 @@
               <input type="text" class="form-control" id="escrow-contractor" value="0xBob791C2DeB8b7F498616142718E84e50882e308">
             </div>
             <div class="form-group">
-              <label class="form-label">Vault Amount (GEN)</label>
+              <label class="form-label">Vault Deposit Amount (GEN)</label>
               <input type="number" class="form-control" id="escrow-amount" value="500" min="10" required>
             </div>
           </div>
@@ -327,8 +353,13 @@ Zero unhandled runtime exceptions
 Code includes comprehensive documentation</textarea>
           </div>
 
-          <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:1rem;">
-            Deploy Escrow on GenLayer
+          <!-- Deposit Confirmation Notice -->
+          <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);margin-bottom:1rem;font-size:0.82rem;color:var(--text-main);">
+            <strong>Client Deposit Notice:</strong> Upon submitting, the specified GEN amount will be transferred to the Intelligent Escrow Contract. The contract will issue an automated payment confirmation receipt confirming funds are locked until AI task verification completes.
+          </div>
+
+          <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:0.5rem;">
+            Deposit Funds &amp; Deploy Escrow
           </button>
         </form>
       </div>
@@ -357,7 +388,36 @@ Code includes comprehensive documentation</textarea>
       </div>
     </div>
 
-    <!-- MODAL 3: GENVM AI ARBITRATION VISUALIZER WITH SPINNER -->
+    <!-- MODAL 3: DEVELOPER PAYOUT DESTINATION ADDRESS PROMPT -->
+    <div class="modal-overlay" id="payout-address-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Enter Payout Destination Address</h3>
+          <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+        <div style="padding:12px;background:rgba(16, 185, 129, 0.1);border:1px solid rgba(16, 185, 129, 0.3);border-radius:var(--radius-md);margin-bottom:1.25rem;">
+          <div style="font-size:0.95rem;font-weight:700;color:var(--success);margin-bottom:4px;">
+            Task Verification Passed!
+          </div>
+          <div style="font-size:0.85rem;color:var(--text-main);">
+            GenVM Committee verified your deliverable (Score: <span id="payout-score-tag">92</span>/100). The escrow vault is ready to disburse <strong id="payout-amount-tag" style="color:var(--primary);">500 GEN</strong>.
+          </div>
+        </div>
+
+        <form id="payout-address-form">
+          <div class="form-group">
+            <label class="form-label">Payout Destination Address</label>
+            <input type="text" class="form-control" id="payout-destination-address" placeholder="Enter your payout wallet address (e.g. 0x...)" value="0xBob791C2DeB8b7F498616142718E84e50882e308" required>
+          </div>
+
+          <button type="submit" class="action-btn" id="confirm-payout-btn" style="width:100%;margin-top:1rem;">
+            Disburse Payment to Address
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL 4: GENVM AI ARBITRATION VISUALIZER WITH SPINNER -->
     <div class="modal-overlay" id="ai-arbitration-modal">
       <div class="modal-card">
         <div class="modal-header">
@@ -403,8 +463,8 @@ Code includes comprehensive documentation</textarea>
           <div class="step-row" id="step-5">
             <div class="step-icon">5</div>
             <div class="step-info">
-              <h4>Autonomous Payout &amp; State Finalization</h4>
-              <p>Disbursing locked escrow vault funds to contractor wallet</p>
+              <h4>Autonomous Verification Finalized</h4>
+              <p>Prompting developer for payout destination address</p>
             </div>
           </div>
         </div>
@@ -415,7 +475,7 @@ Code includes comprehensive documentation</textarea>
       </div>
     </div>
 
-    <!-- MODAL 4: RESOLUTION REPORT -->
+    <!-- MODAL 5: RESOLUTION REPORT -->
     <div class="modal-overlay" id="resolution-details-modal">
       <div class="modal-card">
         <div class="modal-header">
@@ -428,7 +488,7 @@ Code includes comprehensive documentation</textarea>
       </div>
     </div>
 
-    <!-- MODAL 5: STAKE ON MARKET -->
+    <!-- MODAL 6: STAKE ON MARKET -->
     <div class="modal-overlay" id="stake-modal">
       <div class="modal-card">
         <div class="modal-header">
@@ -450,7 +510,7 @@ Code includes comprehensive documentation</textarea>
       </div>
     </div>
 
-    <!-- MODAL 6: CREATE MARKET -->
+    <!-- MODAL 7: CREATE MARKET -->
     <div class="modal-overlay" id="create-market-modal">
       <div class="modal-card">
         <div class="modal-header">
