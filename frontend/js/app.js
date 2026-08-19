@@ -1,6 +1,6 @@
 /**
  * app.js - Main Application Controller for GenLayer Intellex Protocol
- * Persistent Session & Global Bounty Marketplace with EIP-1193 Web3 Wallet Extension Connection
+ * Persistent Session & Global Bounty Marketplace with Modernized EIP-1193 Web3 Wallet Extension Integration
  * Network: GenLayer Bradbury
  */
 
@@ -64,56 +64,116 @@ document.addEventListener('DOMContentLoaded', () => {
     activePayoutEscrowId: null
   };
 
-  // WEB3 WALLET EXTENSION DETECTION & CONNECTION ENGINE
+  // WALLET BRANDING METADATA
+  const WALLET_METADATA = {
+    metamask: {
+      name: 'MetaMask',
+      icon: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M21.5 7.5L13 2 12.5 5.5l5.5 3.5L21.5 7.5z" fill="#E4761E"/><path d="M2.5 7.5L11 2l.5 3.5L6 9 2.5 7.5z" fill="#E4761E"/><path d="M18.5 16.5l-3.5 5L12 18.5l-3 3-3.5-5L3 10l9 8 9-8-2.5 6.5z" fill="#E4761E"/><path d="M12 22l3-3.5-3-1-3 1 3 3.5z" fill="#D7C1B3"/></svg>`,
+      color: 'rgba(228, 118, 30, 0.12)',
+      borderColor: 'rgba(228, 118, 30, 0.35)',
+      desc: 'Browser Extension & Mobile Wallet'
+    },
+    rabby: {
+      name: 'Rabby Wallet',
+      icon: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#8697FF"/><path d="M6 15c2-4 6-5 9-3s4 4 3 6-5 3-7 1c-1.5-1.5-3-1-5 0-1 1-1 3 0 4" stroke="#FFF" stroke-width="2" stroke-linecap="round"/></svg>`,
+      color: 'rgba(134, 151, 255, 0.12)',
+      borderColor: 'rgba(134, 151, 255, 0.35)',
+      desc: 'Multi-Chain Game & DeFi Wallet'
+    },
+    coinbase: {
+      name: 'Coinbase Wallet',
+      icon: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="12" fill="#0052FF"/><rect x="7" y="7" width="10" height="10" rx="3" fill="#FFF"/><rect x="9.5" y="9.5" width="5" height="5" rx="1" fill="#0052FF"/></svg>`,
+      color: 'rgba(0, 82, 255, 0.12)',
+      borderColor: 'rgba(0, 82, 255, 0.35)',
+      desc: 'Coinbase Web3 Extension'
+    },
+    trust: {
+      name: 'Trust Wallet',
+      icon: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 3L4 7v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V7l-8-4z" fill="#0500FF"/><path d="M12 6l5 2.5v4c0 3.6-2.5 7-5 8-2.5-1-5-4.4-5-8v-4l5-2.5z" fill="#FFF"/></svg>`,
+      color: 'rgba(5, 0, 255, 0.12)',
+      borderColor: 'rgba(5, 0, 255, 0.35)',
+      desc: 'Decentralized Crypto Wallet'
+    },
+    phantom: {
+      name: 'Phantom Wallet',
+      icon: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#AB9FF2"/><circle cx="9" cy="11" r="1.5" fill="#FFF"/><circle cx="15" cy="11" r="1.5" fill="#FFF"/><path d="M7 16c2 1 8 1 10 0" stroke="#FFF" stroke-width="2" stroke-linecap="round"/></svg>`,
+      color: 'rgba(171, 159, 242, 0.12)',
+      borderColor: 'rgba(171, 159, 242, 0.35)',
+      desc: 'Multichain EVM & Solana Wallet'
+    },
+    rainbow: {
+      name: 'Rainbow Wallet',
+      icon: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#1A1B1E"/><path d="M4 18A8 8 0 0 1 12 10a8 8 0 0 1 8 8" stroke="#FF5E62" stroke-width="3"/><path d="M7 18a5 5 0 0 1 5-5 5 5 0 0 1 5 5" stroke="#FFD97D" stroke-width="2.5"/><path d="M10 18a2 2 0 0 1 2-2 2 2 0 0 1 2 2" stroke="#6BE585" stroke-width="2"/></svg>`,
+      color: 'rgba(255, 94, 98, 0.12)',
+      borderColor: 'rgba(255, 94, 98, 0.35)',
+      desc: 'Fun & Simple Ethereum Wallet'
+    },
+    okx: {
+      name: 'OKX Wallet',
+      icon: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#000"/><path d="M6 6h4v4H6V6zm8 0h4v4h-4V6zm-4 4h4v4h-4v-4zm-4 4h4v4H6v-4zm8 0h4v4h-4v-4z" fill="#FFF"/></svg>`,
+      color: 'rgba(255, 255, 255, 0.08)',
+      borderColor: 'rgba(255, 255, 255, 0.25)',
+      desc: 'OKX Web3 Multichain Extension'
+    },
+    injected: {
+      name: 'Browser Web3 Provider',
+      icon: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#10B981"/><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#FFF"/></svg>`,
+      color: 'rgba(16, 185, 129, 0.12)',
+      borderColor: 'rgba(16, 185, 129, 0.35)',
+      desc: 'EIP-1193 Standard Injected Provider'
+    }
+  };
+
+  // MODERNIZED WEB3 WALLET EXTENSION DETECTION & CONNECTION ENGINE
   window.detectAvailableWallets = () => {
     const list = [];
 
     // 1. MetaMask
     if (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isRabby) {
-      list.push({ id: 'metamask', name: 'MetaMask', icon: '🦊', provider: window.ethereum, installed: true });
+      list.push({ id: 'metamask', provider: window.ethereum, installed: true });
     } else {
-      list.push({ id: 'metamask', name: 'MetaMask Extension', icon: '🦊', provider: null, installed: false, downloadUrl: 'https://metamask.io/download/' });
+      list.push({ id: 'metamask', provider: null, installed: false, downloadUrl: 'https://metamask.io/download/' });
     }
 
     // 2. Rabby Wallet
     if (window.ethereum && window.ethereum.isRabby) {
-      list.push({ id: 'rabby', name: 'Rabby Wallet', icon: '🐰', provider: window.ethereum, installed: true });
+      list.push({ id: 'rabby', provider: window.ethereum, installed: true });
     } else {
-      list.push({ id: 'rabby', name: 'Rabby Wallet', icon: '🐰', provider: null, installed: false, downloadUrl: 'https://rabby.io/' });
+      list.push({ id: 'rabby', provider: null, installed: false, downloadUrl: 'https://rabby.io/' });
     }
 
     // 3. Coinbase Wallet
     if (window.ethereum && (window.ethereum.isCoinbaseWallet || window.coinbaseWalletExtension)) {
-      list.push({ id: 'coinbase', name: 'Coinbase Wallet', icon: '🔵', provider: window.ethereum, installed: true });
+      list.push({ id: 'coinbase', provider: window.ethereum, installed: true });
     } else {
-      list.push({ id: 'coinbase', name: 'Coinbase Wallet', icon: '🔵', provider: null, installed: false, downloadUrl: 'https://www.coinbase.com/wallet' });
+      list.push({ id: 'coinbase', provider: null, installed: false, downloadUrl: 'https://www.coinbase.com/wallet' });
     }
 
     // 4. Trust Wallet
     if (window.ethereum && (window.ethereum.isTrust || window.trustwallet)) {
-      list.push({ id: 'trust', name: 'Trust Wallet', icon: '🛡️', provider: window.trustwallet || window.ethereum, installed: true });
+      list.push({ id: 'trust', provider: window.trustwallet || window.ethereum, installed: true });
     } else {
-      list.push({ id: 'trust', name: 'Trust Wallet', icon: '🛡️', provider: null, installed: false, downloadUrl: 'https://trustwallet.com/' });
+      list.push({ id: 'trust', provider: null, installed: false, downloadUrl: 'https://trustwallet.com/' });
     }
 
     // 5. Rainbow Wallet
     if (window.ethereum && window.ethereum.isRainbow) {
-      list.push({ id: 'rainbow', name: 'Rainbow Wallet', icon: '🌈', provider: window.ethereum, installed: true });
+      list.push({ id: 'rainbow', provider: window.ethereum, installed: true });
     }
 
     // 6. OKX Wallet
     if (window.okxwallet || (window.ethereum && window.ethereum.isOKXWallet)) {
-      list.push({ id: 'okx', name: 'OKX Wallet', icon: '🖤', provider: window.okxwallet || window.ethereum, installed: true });
+      list.push({ id: 'okx', provider: window.okxwallet || window.ethereum, installed: true });
     }
 
     // 7. Phantom / Solflare Web3
     if (window.phantom && window.phantom.ethereum) {
-      list.push({ id: 'phantom', name: 'Phantom Wallet', icon: '👻', provider: window.phantom.ethereum, installed: true });
+      list.push({ id: 'phantom', provider: window.phantom.ethereum, installed: true });
     }
 
     // 8. Generic Injected Provider fallback
     if (window.ethereum && !list.some(w => w.installed && w.provider === window.ethereum)) {
-      list.push({ id: 'injected', name: 'Browser Web3 Extension', icon: '⚡', provider: window.ethereum, installed: true });
+      list.push({ id: 'injected', provider: window.ethereum, installed: true });
     }
 
     return list;
@@ -128,29 +188,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const wallets = window.detectAvailableWallets();
 
     wallets.forEach(w => {
-      const item = document.createElement('div');
+      const meta = WALLET_METADATA[w.id] || WALLET_METADATA.injected;
+      const card = document.createElement('div');
       const isThisConnected = state.connectedWallet && state.connectedWallet.length > 0;
-      item.className = `wallet-option-item ${isThisConnected ? 'connected' : ''}`;
-      
-      let statusBadge = w.installed 
-        ? `<span class="wallet-item-status installed">Installed</span>`
-        : `<a href="${w.downloadUrl}" target="_blank" class="wallet-item-status" style="text-decoration:underline;" onclick="event.stopPropagation()">Install Extension</a>`;
 
-      item.innerHTML = `
-        <div class="wallet-item-left">
-          <div class="wallet-item-icon">${w.icon}</div>
-          <div class="wallet-item-name">${w.name}</div>
+      card.className = `modern-wallet-card ${isThisConnected ? 'is-connected' : ''}`;
+      if (w.installed) {
+        card.style.borderColor = meta.borderColor;
+      }
+
+      let badgeHtml = '';
+      if (w.installed) {
+        badgeHtml = `<span class="modern-wallet-badge installed">Installed</span>`;
+      } else {
+        badgeHtml = `<a href="${w.downloadUrl}" target="_blank" class="modern-wallet-badge install-link" onclick="event.stopPropagation()">Install</a>`;
+      }
+
+      card.innerHTML = `
+        <div class="modern-wallet-left">
+          <div class="modern-wallet-icon-box" style="background:${meta.color}">
+            ${meta.icon}
+          </div>
+          <div class="modern-wallet-info">
+            <h4>${meta.name}</h4>
+            <p>${meta.desc}</p>
+          </div>
         </div>
-        ${statusBadge}
+        <div>
+          ${badgeHtml}
+        </div>
       `;
 
       if (w.installed) {
-        item.onclick = async () => {
-          await window.connectSelectedWallet(w.provider, w.name);
+        card.onclick = async () => {
+          card.style.opacity = '0.6';
+          await window.connectSelectedWallet(w.provider, meta.name);
+          card.style.opacity = '1';
         };
       }
 
-      container.appendChild(item);
+      container.appendChild(card);
     });
 
     modal.classList.add('active');
@@ -195,15 +272,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (state.connectedWallet && state.connectedWallet.length > 0) {
       const shortAddr = `${state.connectedWallet.slice(0, 6)}...${state.connectedWallet.slice(-4)}`;
-      if (walletBtnIcon) walletBtnIcon.textContent = '🟢';
+      if (walletBtnIcon) walletBtnIcon.innerHTML = `<span class="pulse-dot"></span>`;
       if (walletBtnText) walletBtnText.textContent = shortAddr;
       if (walletBtn) {
-        walletBtn.style.background = 'rgba(16, 185, 129, 0.15)';
-        walletBtn.style.borderColor = 'var(--success)';
-        walletBtn.style.color = 'var(--success)';
-        walletBtn.title = `Connected: ${state.connectedWallet} (Click to disconnect/switch)`;
+        walletBtn.className = 'connected-wallet-pill';
+        walletBtn.title = `Connected Address: ${state.connectedWallet}\n(Click to disconnect/switch)`;
         walletBtn.onclick = () => {
-          if (confirm(`Connected Wallet Extension Address: ${state.connectedWallet}\nDo you want to disconnect?`)) {
+          if (confirm(`Connected Web3 Wallet Extension Address:\n${state.connectedWallet}\n\nDo you want to disconnect?`)) {
             window.disconnectWallet();
           }
         };
@@ -212,6 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (walletBtnIcon) walletBtnIcon.textContent = '⚡';
       if (walletBtnText) walletBtnText.textContent = 'Connect Wallet';
       if (walletBtn) {
+        walletBtn.className = 'action-btn btn-sm';
         walletBtn.style.background = 'var(--primary-gradient)';
         walletBtn.style.borderColor = 'transparent';
         walletBtn.style.color = '#fff';

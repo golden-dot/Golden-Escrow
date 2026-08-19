@@ -127,7 +127,7 @@
 
   <!-- SCREEN 3: MAIN ESCROW PLATFORM DASHBOARD -->
   <div class="app-screen" id="dashboard-screen">
-    <!-- Navbar (Optimized for Mobile & Desktop with Web3 Wallet Extension Connection) -->
+    <!-- Navbar (Optimized for Mobile & Desktop with Modern Web3 Wallet Extension Integration) -->
     <header class="navbar">
       <div class="navbar-header-top">
         <a href="#" class="brand">
@@ -143,7 +143,7 @@
         </a>
 
         <div class="header-mobile-right">
-          <!-- Web3 Wallet Connection Button -->
+          <!-- Web3 Wallet Connection Button (Modern Pill Badge) -->
           <button class="action-btn btn-sm" id="connect-wallet-btn" onclick="window.openConnectWalletModal()" style="gap:6px;">
             <span id="wallet-btn-icon">⚡</span>
             <span id="wallet-btn-text">Connect Wallet</span>
@@ -203,7 +203,7 @@
       <section class="hero-banner">
         <h2 class="hero-title">Autonomous AI-Governed <span class="highlight">Escrow Bounties</span> &amp; Intelligent Contracts</h2>
         <p class="hero-desc">
-          Connect your Web3 Wallet extension (MetaMask, Rabby, Coinbase, Trust) to deploy AI-governed Intelligent Escrow Vaults on GenLayer Bradbury. Milestone payouts are verified autonomously by LLM reasoning and real-time web scrapers running inside GenVM.
+          Connect your Web3 Wallet extension (MetaMask, Rabby, Coinbase, Trust, Rainbow, OKX) to deploy AI-governed Intelligent Escrow Vaults on GenLayer Bradbury. Milestone payouts are verified autonomously by LLM reasoning and real-time web scrapers inside GenVM.
         </p>
 
         <div class="network-stats-row">
@@ -285,26 +285,32 @@
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- MODAL 0: CONNECT WEB3 WALLET EXTENSION (AUTO-DETECT ALL BROWSER WALLETS) -->
+    <!-- MODAL 0: MODERNIZED WEB3 WALLET EXTENSION DETECTION -->
     <div class="modal-overlay" id="connect-wallet-modal">
-      <div class="modal-card">
+      <div class="modal-card wallet-modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">Connect Web3 Wallet Extension</h3>
+          <div>
+            <h3 class="modal-title" style="display:flex;align-items:center;gap:8px;">
+              <span>Connect Web3 Wallet</span>
+              <span style="font-size:0.72rem;padding:3px 8px;border-radius:12px;background:rgba(var(--primary-rgb),0.15);color:var(--primary);font-weight:700;">EIP-1193</span>
+            </h3>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;margin-bottom:0;">
+              Detected wallet extensions in your browser
+            </p>
+          </div>
           <button class="close-btn" onclick="window.closeModals()">&times;</button>
         </div>
 
-        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;">
-          Select your installed browser Web3 wallet extension to connect to GenLayer Bradbury Protocol:
-        </p>
-
         <!-- Dynamic List of Detected Browser Wallets -->
-        <div id="detected-wallets-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:1.25rem;">
-          <!-- Rendered via JS detectAvailableWallets() -->
+        <div class="wallet-grid-list" id="detected-wallets-list">
+          <!-- Rendered dynamically by detectAvailableWallets() -->
         </div>
 
-        <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);font-size:0.8rem;color:var(--text-main);">
-          <strong>Connected Network:</strong> GenLayer Bradbury Testnet<br>
-          Connected wallet addresses are automatically assigned to your escrow bounty creations and claim payouts.
+        <div style="padding:12px 14px;background:rgba(var(--primary-rgb),0.06);border:1px solid rgba(var(--primary-rgb),0.2);border-radius:var(--radius-md);font-size:0.78rem;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;">
+          <span>Network: <strong>GenLayer Bradbury</strong></span>
+          <span style="color:var(--success);font-weight:700;display:flex;align-items:center;gap:4px;">
+            <span class="pulse-dot"></span> Active
+          </span>
         </div>
       </div>
     </div>
