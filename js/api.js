@@ -3,8 +3,8 @@
  * Works 100% standalone on Vercel without requiring a local backend server!
  */
 
-const DEPLOYED_ESCROW_CONTRACT = "0xd0C596531ea0653Def4AAb200a9B8A3686bed552";
-const DEPLOYED_ORACLE_CONTRACT = "0xF19639Fcc392219334E0F6009001038fe98f2868";
+const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
+const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
 // In-Memory Local Datastore for static Vercel deployment
 const localStore = {
