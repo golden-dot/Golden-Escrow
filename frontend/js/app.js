@@ -1,6 +1,6 @@
 /**
  * app.js - Main Application Controller for GenLayer Intellex Protocol
- * Full Multi-Screen Flow: Login Page -> Role Selection Page -> Main Platform Dashboard
+ * Full Multi-Screen Flow: Login Page -> Permanent Role Lock -> Main Platform Dashboard
  * Network: GenLayer Bradbury
  */
 
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ESCROW_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ESCROW_CONTRACT}`;
   const ORACLE_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ORACLE_CONTRACT}`;
 
-  // Registered Accounts Repository (Prevents Duplicate Email Registrations)
+  // Registered Accounts Repository (Prevents Duplicate Email Registrations & Stores Locked Roles)
   let registeredAccounts = [];
   try {
     registeredAccounts = JSON.parse(localStorage.getItem('intellex_registered_accounts')) || [];
@@ -47,10 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // App State - Fresh Start
+  // App State
   const state = {
     currentScreen: 'login',
-    currentRole: localStorage.getItem('intellex_role') || 'client',
+    currentRole: localStorage.getItem('intellex_role') || '',
     currentUsername: localStorage.getItem('intellex_username') || '',
     currentEmail: localStorage.getItem('intellex_email') || '',
     currentWallet: localStorage.getItem('intellex_wallet') || '',
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       state.currentUsername = '';
       state.currentEmail = '';
-      state.currentRole = 'client';
+      state.currentRole = '';
 
       showToast('Logged out successfully', 'info');
       showScreen('login');
@@ -171,11 +171,30 @@ document.addEventListener('DOMContentLoaded', () => {
           loginSubmitBtn.disabled = false;
         }
 
-        state.currentUsername = identifier.includes('@') ? identifier.split('@')[0] : identifier;
-        state.currentEmail = identifier.includes('@') ? identifier.toLowerCase() : `${identifier.toLowerCase()}@user.io`;
+        const cleanEmail = identifier.includes('@') ? identifier.toLowerCase() : `${identifier.toLowerCase()}@user.io`;
+        const account = registeredAccounts.find(acc => acc.email === cleanEmail || acc.name.toLowerCase() === identifier.toLowerCase());
 
-        showToast(`Authenticated as ${state.currentUsername}`, 'success');
-        showScreen('role');
+        state.currentUsername = account ? account.name : (identifier.includes('@') ? identifier.split('@')[0] : identifier);
+        state.currentEmail = cleanEmail;
+        state.currentWallet = cleanEmail;
+
+        if (account && account.role) {
+          // Account already has a locked role -> bypass role selection!
+          state.currentRole = account.role;
+          localStorage.setItem('intellex_role', account.role);
+          localStorage.setItem('intellex_username', state.currentUsername);
+          localStorage.setItem('intellex_email', state.currentEmail);
+
+          showToast(`Logged in as ${state.currentUsername} (${account.role.toUpperCase()})`, 'success');
+          updateRoleUI();
+          showScreen('dashboard');
+          loadEscrows();
+          loadMarkets();
+        } else {
+          // New login without locked role -> show role selection once
+          showToast(`Authenticated as ${state.currentUsername}`, 'success');
+          showScreen('role');
+        }
       }, 500);
     });
   }
@@ -214,15 +233,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const username = fullName || email.split('@')[0];
-        registeredAccounts.push({
+        const newAccount = {
           email: email,
           name: username,
+          role: '', // Pending permanent lock
           createdAt: new Date().toISOString()
-        });
+        };
+        registeredAccounts.push(newAccount);
         saveRegisteredAccounts();
 
         state.currentUsername = username;
         state.currentEmail = email;
+        state.currentWallet = email;
 
         showToast(`Account created successfully for ${state.currentUsername}!`, 'success');
         showScreen('role');
@@ -230,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // SCREEN 2: ROLE SELECTION HANDLER
+  // SCREEN 2: INITIAL PERMANENT ROLE LOCK HANDLER
   const roleOptions = document.querySelectorAll('.role-card-option');
   const confirmRoleBtn = document.getElementById('confirm-role-btn');
 
@@ -244,6 +266,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (confirmRoleBtn) {
     confirmRoleBtn.addEventListener('click', () => {
+      if (!state.currentRole) state.currentRole = 'builder';
+
       confirmRoleBtn.classList.add('btn-loading');
       confirmRoleBtn.disabled = true;
 
@@ -251,10 +275,18 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmRoleBtn.classList.remove('btn-loading');
         confirmRoleBtn.disabled = false;
 
+        // Permanently lock role in user account record
+        const acc = registeredAccounts.find(a => a.email === state.currentEmail || a.name === state.currentUsername);
+        if (acc) {
+          acc.role = state.currentRole;
+          saveRegisteredAccounts();
+        }
+
         localStorage.setItem('intellex_role', state.currentRole);
         localStorage.setItem('intellex_username', state.currentUsername);
         localStorage.setItem('intellex_email', state.currentEmail);
 
+        showToast(`Role permanently locked to: ${state.currentRole.toUpperCase()}`, 'success');
         updateRoleUI();
         showScreen('dashboard');
         loadEscrows();
@@ -263,53 +295,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // SCREEN 3: DASHBOARD ROLE & NAVIGATION UI
+  // SCREEN 3: TAILORED DASHBOARD FEATURES PER ROLE
   function updateRoleUI() {
     const username = state.currentUsername || 'User';
+    const role = state.currentRole || 'client';
 
     const roleProfiles = {
       builder: {
         title: 'BUILDER',
         welcome: `Welcome, ${username} (Builder & Contractor)`,
-        desc: 'Browse open community bounties, claim milestone tasks, submit deliverable URLs, verify work via GenVM AI, and enter your destination payout address to receive disbursements.',
-        primaryAction: 'Browse Open Tasks to Claim',
-        primaryActionTab: 'open-bounties'
+        desc: 'Browse open bounties created by clients, claim tasks, submit deliverables, verify work via GenVM AI, and receive payouts directly to your wallet address.',
+        primaryAction: 'Browse Open Bounties',
+        primaryActionTab: 'open-bounties',
+        showDeployBtn: false
       },
       client: {
         title: 'CLIENT',
         welcome: `Welcome, ${username} (Client & Buyer)`,
         desc: 'Deploy AI-governed milestone escrows, deposit project funds into the contract, and receive automated payment receipt confirmations locked until AI task verification completes.',
         primaryAction: '+ Deploy New Escrow Vault',
-        primaryActionTab: 'create-escrow'
+        primaryActionTab: 'create-escrow',
+        showDeployBtn: true
       },
       dao: {
         title: 'DAO ARBITER',
         welcome: `Welcome, ${username} (DAO Governance Arbiter)`,
-        desc: 'Stake GEN tokens in committee validator pools, monitor equivalence execution, and govern protocol dispute reserves.',
-        primaryAction: 'View Escrow Marketplace',
-        primaryActionTab: 'escrows'
+        desc: 'Stake GEN tokens in committee validator pools, monitor equivalence execution, and govern protocol dispute reserves on GenLayer Bradbury.',
+        primaryAction: 'View Active Tasks & Equivalence',
+        primaryActionTab: 'escrows',
+        showDeployBtn: false
       },
       predictor: {
         title: 'PREDICTOR',
         welcome: `Welcome, ${username} (Truth Market Predictor)`,
         desc: 'Trade and stake on real-world factual claims verified by automated multi-source web crawlers and GenLayer consensus.',
         primaryAction: 'Explore Truth Markets',
-        primaryActionTab: 'oracle'
+        primaryActionTab: 'oracle',
+        showDeployBtn: false
       }
     };
 
-    const profile = roleProfiles[state.currentRole] || roleProfiles.client;
+    const profile = roleProfiles[role] || roleProfiles.client;
 
     const navName = document.getElementById('nav-user-name');
     const navRole = document.getElementById('nav-user-role');
     const welcomeTitle = document.getElementById('role-welcome-title');
     const welcomeDesc = document.getElementById('role-welcome-desc');
     const primaryActionBtn = document.getElementById('role-primary-action-btn');
+    const openCreateEscrowBtn = document.getElementById('open-create-escrow-btn');
 
     if (navName) navName.textContent = username;
     if (navRole) navRole.textContent = profile.title;
     if (welcomeTitle) welcomeTitle.textContent = profile.welcome;
     if (welcomeDesc) welcomeDesc.textContent = profile.desc;
+
+    // Tailor Deploy Escrow Button based on role
+    if (openCreateEscrowBtn) {
+      openCreateEscrowBtn.style.display = profile.showDeployBtn ? 'inline-flex' : 'none';
+    }
 
     if (primaryActionBtn) {
       primaryActionBtn.textContent = profile.primaryAction;
@@ -317,22 +360,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (profile.primaryActionTab === 'create-escrow') {
           document.getElementById('create-escrow-modal').classList.add('active');
         } else if (profile.primaryActionTab === 'open-bounties') {
-          document.querySelector('.filter-chip[data-filter="open"]').click();
+          const chip = document.querySelector('.filter-chip[data-filter="open"]');
+          if (chip) chip.click();
         } else if (profile.primaryActionTab === 'oracle') {
-          document.querySelector('.nav-tab[data-tab="oracle"]').click();
+          const tab = document.querySelector('.nav-tab[data-tab="oracle"]');
+          if (tab) tab.click();
         } else {
-          document.querySelector('.nav-tab[data-tab="escrows"]').click();
+          const tab = document.querySelector('.nav-tab[data-tab="escrows"]');
+          if (tab) tab.click();
         }
       };
     }
+
+    // Role-specific default view
+    if (role === 'predictor') {
+      const oracleTabBtn = document.getElementById('nav-tab-oracle');
+      if (oracleTabBtn) oracleTabBtn.click();
+    } else if (role === 'builder') {
+      state.activeFilter = 'open';
+      const openChip = document.querySelector('.filter-chip[data-filter="open"]');
+      if (openChip) {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        openChip.classList.add('active');
+      }
+    }
   }
-
-  // Role Switching buttons inside Dashboard
-  const switchRoleNavBtn = document.getElementById('switch-role-nav-btn');
-  const switchRoleHeroBtn = document.getElementById('switch-role-hero-btn');
-
-  if (switchRoleNavBtn) switchRoleNavBtn.onclick = () => showScreen('role');
-  if (switchRoleHeroBtn) switchRoleHeroBtn.onclick = () => showScreen('role');
 
   // Tab Navigation inside Dashboard
   const tabs = document.querySelectorAll('.nav-tab');
@@ -389,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Load & Render Escrows
+  // Load & Render Escrows (BUILDERS SEE ALL OPEN BOUNTIES; CREATORS CANNOT CLAIM OWN BOUNTY)
   async function loadEscrows() {
     try {
       const escrows = await API.getEscrows();
@@ -404,11 +456,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!escrowsContainer) return;
     escrowsContainer.innerHTML = '';
 
+    const currentUser = (state.currentUsername || '').toLowerCase();
+    const currentEmail = (state.currentEmail || '').toLowerCase();
+
     const countAll = state.escrows.length;
     const countOpen = state.escrows.filter(e => e.status === 'OPEN_FOR_CLAIM' || (e.contractor && e.contractor.startsWith('0x0000'))).length;
     const countMy = state.escrows.filter(e => 
-      (e.client && e.client.toLowerCase() === state.currentWallet.toLowerCase()) || 
-      (e.contractor && e.contractor.toLowerCase() === state.currentWallet.toLowerCase())
+      (e.client && (e.client.toLowerCase() === currentUser || e.client.toLowerCase() === currentEmail)) || 
+      (e.contractor && (e.contractor.toLowerCase() === currentUser || e.contractor.toLowerCase() === currentEmail))
     ).length;
     const countCompleted = state.escrows.filter(e => e.status === 'ACCEPTED' || e.status === 'COMPLETED').length;
 
@@ -433,10 +488,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!matchesSearch) return false;
 
       if (state.activeFilter === 'open') {
+        // BUILDERS SEE ALL OPEN BOUNTIES CREATED BY ANY CLIENT
         return escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'));
       } else if (state.activeFilter === 'my-jobs') {
-        return (escrow.client && escrow.client.toLowerCase() === state.currentWallet.toLowerCase()) || 
-               (escrow.contractor && escrow.contractor.toLowerCase() === state.currentWallet.toLowerCase());
+        return (escrow.client && (escrow.client.toLowerCase() === currentUser || escrow.client.toLowerCase() === currentEmail)) || 
+               (escrow.contractor && (escrow.contractor.toLowerCase() === currentUser || escrow.contractor.toLowerCase() === currentEmail));
       } else if (state.activeFilter === 'completed') {
         return escrow.status === 'ACCEPTED' || escrow.status === 'COMPLETED';
       }
@@ -447,7 +503,7 @@ document.addEventListener('DOMContentLoaded', () => {
       escrowsContainer.innerHTML = `
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
           <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrows found</div>
-          <div>Click "+ Deploy New Escrow" to create the first Intelligent Escrow on GenLayer Bradbury!</div>
+          <div>${state.currentRole === 'client' ? 'Click "+ Deploy New Escrow" to post a task!' : 'Check back soon for new open community bounties.'}</div>
         </div>
       `;
       return;
@@ -461,13 +517,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const isOpenForClaim = escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'));
       const statusClass = escrow.status ? escrow.status.toLowerCase() : 'pending';
 
+      const clientOwnerLower = (escrow.client || '').toLowerCase();
+      const isCreatorOfTask = (clientOwnerLower === currentUser || clientOwnerLower === currentEmail);
+
       let actionBtnHtml = '';
       if (isOpenForClaim) {
-        actionBtnHtml = `
-          <button class="action-btn btn-sm" onclick="window.claimEscrowBounty(${id}, this)">
-            Claim Task as Builder
-          </button>
-        `;
+        if (isCreatorOfTask) {
+          // Task Creator CANNOT claim their own bounty
+          actionBtnHtml = `
+            <div style="font-size:0.78rem;color:var(--text-muted);font-weight:600;padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:6px;text-align:center;">
+              Created by You (Cannot Claim Own Bounty)
+            </div>
+          `;
+        } else {
+          actionBtnHtml = `
+            <button class="action-btn btn-sm" onclick="window.claimEscrowBounty(${id}, this)">
+              Claim Task as Builder
+            </button>
+          `;
+        }
       } else if (escrow.status === 'ACTIVE' || escrow.status === 'PENDING') {
         actionBtnHtml = `<button class="secondary-btn btn-sm" onclick="window.openSubmitModal(${id})">Submit Deliverable</button>`;
       } else if (escrow.status === 'SUBMITTED') {
@@ -505,9 +573,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const contractorDisplay = isOpenForClaim 
         ? '<span style="color:var(--primary);font-weight:700;">Open for Claim</span>' 
-        : (escrow.contractor ? `${escrow.contractor.slice(0, 8)}...${escrow.contractor.slice(-6)}` : 'Unassigned');
+        : (escrow.contractor ? `${escrow.contractor}` : 'Unassigned');
 
-      const clientDisplay = escrow.client ? `${escrow.client.slice(0, 8)}...${escrow.client.slice(-6)}` : 'Client';
+      const clientDisplay = escrow.client ? escrow.client : 'Client';
 
       card.innerHTML = `
         <div>
@@ -517,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
               ${escrow.category ? `<span style="margin-left:6px;font-size:0.7rem;color:var(--primary);">${escrow.category}</span>` : ''}
             </div>
             <span class="status-badge ${isOpenForClaim ? 'open_for_claim' : (escrow.status === 'ACCEPTED' ? 'approved' : statusClass)}">
-              ${isOpenForClaim ? 'OPEN TASK' : escrow.status.replace(/_/g, ' ')}
+              ${isOpenForClaim ? 'OPEN BOUNTY' : escrow.status.replace(/_/g, ' ')}
             </span>
           </div>
           <h3 class="card-title">${escrow.title}</h3>
@@ -525,8 +593,8 @@ document.addEventListener('DOMContentLoaded', () => {
           
           <div class="meta-grid">
             <div class="meta-box">
-              <span class="meta-label">Client (Buyer)</span>
-              <span class="meta-val">${clientDisplay}</span>
+              <span class="meta-label">Client (Creator)</span>
+              <span class="meta-val" style="font-weight:600;">${clientDisplay}</span>
             </div>
             <div class="meta-box">
               <span class="meta-label">Contractor (Builder)</span>
@@ -558,8 +626,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Claim Bounty Handler
+  // Claim Bounty Handler (BLOCKS CREATORS FROM CLAIMING THEIR OWN TASK)
   window.claimEscrowBounty = async (escrowId, btnElement) => {
+    const escrow = state.escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    if (escrow) {
+      const clientOwnerLower = (escrow.client || '').toLowerCase();
+      const currentUser = (state.currentUsername || '').toLowerCase();
+      const currentEmail = (state.currentEmail || '').toLowerCase();
+
+      if (clientOwnerLower === currentUser || clientOwnerLower === currentEmail) {
+        showToast('You cannot claim your own bounty task!', 'danger');
+        return;
+      }
+    }
+
     if (btnElement) {
       btnElement.classList.add('btn-loading');
       btnElement.disabled = true;
@@ -568,7 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await API.joinEscrow({
         escrow_id: escrowId,
         role: 'contractor',
-        participant_address: state.currentWallet || "0xBuilderAddress"
+        participant_address: state.currentUsername || state.currentEmail || "0xBuilderAddress"
       });
       showToast(`Successfully claimed Escrow #${escrowId}! Assigned as Contractor.`, 'success');
       loadEscrows();
@@ -696,7 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         const res = await API.createEscrow({
-          client: state.currentWallet || "0xClientWallet",
+          client: state.currentUsername || state.currentEmail || "Client",
           contractor: assignmentSelect && assignmentSelect.value === 'assigned' ? document.getElementById('escrow-contractor').value : '0x0000000000000000000000000000000000000000',
           title: document.getElementById('escrow-title').value,
           description: document.getElementById('escrow-desc').value,
@@ -742,7 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sources = sourcesText ? sourcesText.split('\n').filter(s => s.trim().length > 0) : [];
 
         const res = await API.createMarket({
-          creator: state.currentWallet || "0xUserCreatorAddress",
+          creator: state.currentUsername || state.currentEmail || "Predictor",
           question: question,
           category: category,
           resolution_criteria: criteria,
@@ -780,7 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await API.submitDeliverable({
           escrow_id: activeEscrowId,
-          sender: state.currentWallet || "0xContractorWallet",
+          sender: state.currentUsername || state.currentEmail || "Builder",
           deliverable_url: document.getElementById('deliv-url').value,
           deliverable_notes: document.getElementById('deliv-notes').value
         });
@@ -801,7 +881,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // AI Arbitration Visualizer Step Sequence
+  // AI ARBITRATION VISUALIZER STEP SEQUENCE (IF REJECTED, RETURNS TO OPEN BOUNTY)
   window.triggerAIArbitration = async (escrowId) => {
     state.activePayoutEscrowId = escrowId;
     const modal = document.getElementById('ai-arbitration-modal');
@@ -845,12 +925,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (steps[3]) { steps[3].classList.remove('active'); steps[3].classList.add('completed'); }
         if (steps[4]) { steps[4].classList.add('active'); steps[4].classList.add('completed'); }
 
-        if (statusText) statusText.textContent = `Consensus Proven! Task Verified (Score: 92/100). Opening Payout Destination Address Prompt...`;
-        loadEscrows();
-        setTimeout(() => {
-          window.closeModals();
-          window.promptPayoutAddressModal(escrowId);
-        }, 1500);
+        if (res.decision === 'ACCEPT') {
+          if (statusText) statusText.textContent = `Consensus Proven! Task Verified (Score: ${res.resolution ? res.resolution.score : 92}/100). Opening Payout Destination Address Prompt...`;
+          loadEscrows();
+          setTimeout(() => {
+            window.closeModals();
+            window.promptPayoutAddressModal(escrowId);
+          }, 1500);
+        } else {
+          // IF REJECTED: Task returns to OPEN_FOR_CLAIM status so other builders can claim
+          const target = state.escrows.find(e => (e.escrow_id || e.id) === escrowId);
+          if (target) {
+            target.status = 'OPEN_FOR_CLAIM';
+            target.contractor = '0x0000000000000000000000000000000000000000';
+            target.deliverable_url = '';
+            target.deliverable_notes = '';
+          }
+          if (statusText) statusText.textContent = `Verification REJECTED. Task returned to Open Bounty Marketplace for other builders!`;
+          loadEscrows();
+          setTimeout(() => {
+            window.closeModals();
+          }, 2000);
+        }
       } catch (err) {
         if (statusText) statusText.textContent = `Execution error: ${err.message}`;
       }
@@ -955,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await API.placeBet({
           market_id: activeMarketId,
-          sender: state.currentWallet,
+          sender: state.currentUsername || state.currentEmail || "Predictor",
           side: activeMarketSide,
           amount: parseFloat(document.getElementById('stake-amount').value)
         });

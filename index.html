@@ -79,46 +79,48 @@
     </div>
   </div>
 
-  <!-- SCREEN 2: POST-LOGIN ROLE SELECTION PAGE -->
+  <!-- SCREEN 2: INITIAL PERMANENT ROLE SELECTION PAGE (LOCKED UPON CHOICE) -->
   <div class="app-screen" id="role-selection-screen">
     <div class="role-screen-container">
       <div class="role-header">
-        <h2>What do you want to do on Intellex?</h2>
-        <p>Select your primary objective on the GenLayer Intelligent Escrow Platform.</p>
+        <h2>Choose Your Account Role</h2>
+        <p style="color:var(--warning);font-weight:600;margin-top:4px;">
+          Note: This role will be permanently locked to your account to preserve protocol integrity.
+        </p>
       </div>
 
       <div class="role-grid">
         <!-- Option A: Builder / Contractor -->
         <div class="role-card-option selected" id="role-card-builder" data-role="builder">
           <span class="role-tag-badge">BUILDER / CONTRACTOR</span>
-          <h3>I want to Build &amp; Claim Bounties</h3>
-          <p>Search active tasks, claim community bounties, submit deliverable PRs, verify tasks via AI, and receive payments to your chosen address.</p>
+          <h3>Builder Account</h3>
+          <p>Browse open community bounties, claim tasks created by clients, submit deliverable PRs, verify tasks via AI, and receive payment payouts.</p>
         </div>
 
         <!-- Option B: Client / Buyer -->
         <div class="role-card-option" id="role-card-client" data-role="client">
           <span class="role-tag-badge">CLIENT / BUYER</span>
-          <h3>I want to Create &amp; Fund Escrow Vaults</h3>
-          <p>Post tasks, define strict LLM acceptance criteria, deposit escrow funds, and receive contract payment confirmation receipts.</p>
+          <h3>Client Account</h3>
+          <p>Create escrow tasks, define strict LLM acceptance criteria, deposit escrow funds into vault, and review AI verification reports.</p>
         </div>
 
         <!-- Option C: DAO Arbiter -->
         <div class="role-card-option" id="role-card-dao" data-role="dao">
           <span class="role-tag-badge">DAO ARBITER</span>
-          <h3>I want to Participate in Governance</h3>
-          <p>Stake GEN tokens in committee validator pools, monitor equivalence consensus, and resolve disputed verification rounds.</p>
+          <h3>DAO Governance Account</h3>
+          <p>Stake GEN tokens in committee validator pools, monitor equivalence consensus, and govern protocol dispute reserves.</p>
         </div>
 
         <!-- Option D: Oracle Predictor -->
         <div class="role-card-option" id="role-card-predictor" data-role="predictor">
           <span class="role-tag-badge">ORACLE PREDICTOR</span>
-          <h3>I want to Trade Prediction Markets</h3>
+          <h3>Truth Oracle Account</h3>
           <p>Stake on real-world factual claims verified by automated multi-source web crawlers and GenLayer consensus.</p>
         </div>
       </div>
 
       <button class="action-btn" id="confirm-role-btn" style="padding:14px 40px;font-size:1rem;min-width:280px;">
-        Launch Platform Dashboard
+        Lock Role &amp; Launch Dashboard
       </button>
     </div>
   </div>
@@ -141,17 +143,17 @@
 
       <!-- Navigation Tabs -->
       <nav class="nav-links">
-        <button class="nav-tab active" data-tab="escrows">
+        <button class="nav-tab active" data-tab="escrows" id="nav-tab-escrows">
           Intelligent Escrow
         </button>
-        <button class="nav-tab" data-tab="oracle">
+        <button class="nav-tab" data-tab="oracle" id="nav-tab-oracle">
           TruthForge Oracle
         </button>
       </nav>
 
       <!-- Network, Theme Toggle, Profile Badge, Logout -->
       <div class="nav-wallet">
-        <div class="user-profile-badge" id="switch-role-nav-btn" title="Click to Switch Active Role">
+        <div class="user-profile-badge" id="nav-profile-badge">
           <div>
             <div id="nav-user-name" style="font-size:0.82rem;font-weight:700;line-height:1.2;">User</div>
             <div class="role-pill" id="nav-user-role">CLIENT</div>
@@ -183,9 +185,6 @@
         <div class="role-hero-actions">
           <button class="action-btn" id="role-primary-action-btn">
             + Deploy New Escrow Vault
-          </button>
-          <button class="secondary-btn" id="switch-role-hero-btn">
-            Switch Role
           </button>
         </div>
       </section>
@@ -230,7 +229,7 @@
       <!-- TAB 1: INTELLIGENT ESCROW -->
       <section class="tab-content active" id="escrows-tab">
         <div class="section-header">
-          <div class="section-title">
+          <div class="section-title" id="escrow-section-title">
             Escrow Marketplace &amp; Tasks
           </div>
           <button class="action-btn" id="open-create-escrow-btn">
@@ -245,7 +244,7 @@
 
           <div class="filter-chips">
             <button class="filter-chip active" data-filter="all">All Tasks (<span id="count-all">0</span>)</button>
-            <button class="filter-chip" data-filter="open">Open to Claim (<span id="count-open">0</span>)</button>
+            <button class="filter-chip" data-filter="open">Open Bounties (<span id="count-open">0</span>)</button>
             <button class="filter-chip" data-filter="my-jobs">My Tasks (<span id="count-my">0</span>)</button>
             <button class="filter-chip" data-filter="completed">Verified (<span id="count-completed">0</span>)</button>
           </div>
