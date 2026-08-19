@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // SCREEN 1: AUTH TAB SWITCHER (LOG IN VS CREATE ACCOUNT)
+  // SCREEN 1: AUTH TAB SWITCHER
   window.switchAuthTab = (tab) => {
     const loginBtn = document.getElementById('auth-tab-login');
     const signupBtn = document.getElementById('auth-tab-signup');
@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmRoleBtn.classList.remove('btn-loading');
         confirmRoleBtn.disabled = false;
 
-        const acc = registeredAccounts.find(a => a.email === state.currentEmail || a.name === state.currentUsername);
+        const acc = registeredAccounts.find(a => a.email === state.currentEmail || a.name.toLowerCase() === state.currentUsername.toLowerCase());
         if (acc) {
           acc.role = state.currentRole;
           saveRegisteredAccounts();
@@ -472,8 +472,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const currentUser = (state.currentUsername || '').toLowerCase();
     const currentEmail = (state.currentEmail || '').toLowerCase();
-    const isBuilder = state.currentRole === 'builder';
-    const isClient = state.currentRole === 'client';
 
     const countAll = state.escrows.length;
     const countOpen = state.escrows.filter(e => e.status === 'OPEN_FOR_CLAIM' || (e.contractor && e.contractor.startsWith('0x0000'))).length;
@@ -503,24 +501,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!matchesSearch) return false;
 
-      // CLIENT ROLE: IN 'ALL' FILTER, CLIENT SEES HIS OWN CREATED TASKS
-      if (isClient && state.activeFilter === 'all') {
-        const clientOwnerLower = (escrow.client || '').toLowerCase();
-        return (clientOwnerLower === currentUser || clientOwnerLower === currentEmail);
-      }
-
-      // BUILDER ROLE OR 'OPEN' FILTER: SHOW ALL OPEN COMMUNITY BOUNTIES
-      if (state.activeFilter === 'open' || (isBuilder && state.activeFilter === 'all')) {
+      if (state.activeFilter === 'open') {
+        // SHOW ALL OPEN UNASSIGNED BOUNTIES FOR EVERY USER/BUILDER
         return escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'));
-      }
-
-      if (state.activeFilter === 'my-jobs') {
+      } else if (state.activeFilter === 'my-jobs') {
+        // MY CREATED OR MY CLAIMED TASKS
         return (escrow.client && (escrow.client.toLowerCase() === currentUser || escrow.client.toLowerCase() === currentEmail)) || 
                (escrow.contractor && (escrow.contractor.toLowerCase() === currentUser || escrow.contractor.toLowerCase() === currentEmail));
       } else if (state.activeFilter === 'completed') {
         return escrow.status === 'ACCEPTED' || escrow.status === 'COMPLETED';
       }
 
+      // 'all' FILTER SHOWS ALL ESCROWS ACROSS THE NETWORK
       return true;
     });
 
@@ -528,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
       escrowsContainer.innerHTML = `
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
           <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrows found</div>
-          <div>${isClient ? 'Click "+ Deploy New Escrow" to post a task!' : 'Check back soon for new open community bounties.'}</div>
+          <div>${state.currentRole === 'client' ? 'Click "+ Deploy New Escrow" to post a task!' : 'Check back soon for new open community bounties.'}</div>
         </div>
       `;
       return;
