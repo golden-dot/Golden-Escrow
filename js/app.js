@@ -764,12 +764,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // CONTRACTOR APPEAL REJECTION
-  window.openAppealModal = (escrowId) => {
-    state.activePayoutEscrowId = escrowId;
-    const notesInput = document.getElementById('deliv-notes');
-    if (notesInput) notesInput.value = '';
-    document.getElementById('submit-deliverable-modal').classList.add('active');
+  // CONTRACTOR PAYOUT CLAIM
+  window.claimContractorPayout = async (escrowId, btnElement) => {
+    if (btnElement) {
+      btnElement.classList.add('btn-loading');
+      btnElement.disabled = true;
+    }
+    const callerAddr = state.connectedWallet || "0x2222222222222222222222222222222222222222";
+    try {
+      await API.releasePayout(escrowId, callerAddr);
+      if (btnElement) {
+        btnElement.classList.remove('btn-loading');
+        btnElement.disabled = false;
+      }
+      showToast(`Payout disburse confirmed! Escrow funds released to contractor.`, 'success');
+      loadEscrows();
+    } catch (err) {
+      if (btnElement) {
+        btnElement.classList.remove('btn-loading');
+        btnElement.disabled = false;
+      }
+      showToast('Payout error: ' + err.message, 'danger');
+    }
   };
 
   function renderEscrows() {
@@ -882,8 +898,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (status === 'APPROVED' || status === 'PAYOUT_CLAIMABLE') {
         if (isAssignedContractor || isCreatorOfTask) {
           actionBtnHtml = `
-            <button class="action-btn btn-sm" style="background:var(--accent-purple);" onclick="window.promptPayoutAddressModal(${id})">
-              Release Payout to Address
+            <button class="action-btn btn-sm" style="background:var(--accent-purple);" onclick="window.claimContractorPayout(${id}, this)">
+              Release Payout to Contractor
             </button>
           `;
         }

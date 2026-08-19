@@ -96,7 +96,6 @@ class SubmitDeliverableRequest(BaseModel):
 
 class ReleasePayoutRequest(BaseModel):
     caller_address: str = Field(..., max_length=42)
-    destination_address: str = Field(..., max_length=42)
 
 class AppealRequest(BaseModel):
     contractor_address: str = Field(..., max_length=42)
@@ -243,7 +242,7 @@ def arbitrate_endpoint(escrow_id: int):
 def release_payout_endpoint(escrow_id: int, req: ReleasePayoutRequest):
     try:
         gl.set_message_sender(req.caller_address)
-        escrow_contract.release_payout(u256(escrow_id), Address(req.destination_address))
+        escrow_contract.release_payout(u256(escrow_id))
         e_dict = escrow_contract.get_escrow(u256(escrow_id))
         return {"success": True, "message": "Payout released", "escrow": format_escrow_response(e_dict)}
     except Exception as e:

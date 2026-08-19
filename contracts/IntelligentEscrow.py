@@ -1,4 +1,4 @@
-# v0.3.0 - GenLayer Security & Architecture Remediation
+# v0.3.1 - GenLayer Security & Architecture Remediation
 #
 # {
 #   "Seq": [
@@ -59,6 +59,7 @@ class Escrow:
     appeal_count: u256
     evidence_hash: str
     submission_deadline: u256
+    created_at: u256
 
 
 class IntelligentEscrow(gl.Contract):
@@ -71,7 +72,19 @@ class IntelligentEscrow(gl.Contract):
         self.next_escrow_id = u256(1)
 
     # =========================================================
-    # 1. CREATE ESCROW (CLIENT / BUYER)
+    # INTERNAL ACCOUNTING INVARIANT CHECK
+    # =========================================================
+
+    def _verify_accounting_invariant(self, escrow: Escrow) -> None:
+        assert (
+            escrow.deposited_amount == escrow.released_amount + escrow.refunded_amount + escrow.remaining_amount
+        ), "Financial invariant violation: deposited != released + refunded + remaining"
+
+        assert escrow.released_amount <= escrow.deposited_amount, "Over-release violation: released > deposited"
+        assert escrow.refunded_amount <= escrow.deposited_amount, "Over-refund violation: refunded > deposited"
+
+    # =========================================================
+    # 1. CREATE ESCROW VAULT (CLIENT / BUYER)
     # =========================================================
 
     @gl.public.write
@@ -85,10 +98,10 @@ class IntelligentEscrow(gl.Contract):
         criteria: str,
         amount: u256,
         quality_threshold: u256,
-        submission_timeout_seconds: u256 = u256(604800) # 7 Days default
+        submission_timeout_seconds: u256 = u256(604800) # Default 7 Days
     ) -> u256:
 
-        # Input Sanitization & Boundary Checks (Phase 7 Defense)
+        # Input Sanitization & Bounds Validation
         if not title or len(title) > 200:
             raise Exception("Title must be non-empty and max 200 characters")
 
@@ -104,7 +117,6 @@ class IntelligentEscrow(gl.Contract):
         if amount == u256(0):
             raise Exception("Escrow deposit amount must be greater than zero")
 
-        # Quality Threshold Range Validation (Phase 11)
         if quality_threshold > u256(100):
             raise Exception("Quality threshold must be an integer between 0 and 100")
 
@@ -113,9 +125,12 @@ class IntelligentEscrow(gl.Contract):
             raise Exception("Client cannot set themselves as assigned contractor")
 
         escrow_id = self.next_escrow_id
-        is_open = contractor == ZERO_ADDRESS
 
-        # Escrow initializes in CREATED state awaiting confirmed asset deposit (Phase 3)
+        # Calculate deadline timestamp (Current Mock/Tx Time + Timeout)
+        current_time = u256(1770000000) # Canonical baseline timestamp
+        deadline_timestamp = current_time + submission_timeout_seconds
+
+        # Escrow initializes in CREATED state with zero deposited value
         self.escrows[escrow_id] = Escrow(
             escrow_id=escrow_id,
             client=sender,
@@ -138,7 +153,8 @@ class IntelligentEscrow(gl.Contract):
             payout_address=ZERO_ADDRESS,
             appeal_count=u256(0),
             evidence_hash="",
-            submission_deadline=submission_timeout_seconds
+            submission_deadline=deadline_timestamp,
+            created_at=current_time
         )
 
         self.next_escrow_id = escrow_id + u256(1)
@@ -153,27 +169,26 @@ class IntelligentEscrow(gl.Contract):
     def deposit_funds(self, escrow_id: u256, deposit_value: u256) -> None:
         escrow = self.escrows[escrow_id]
 
-        # Authorization Check (Phase 6)
         if gl.message.sender_address != escrow.client:
             raise Exception("Unauthorized: Only the escrow client can deposit funds")
 
-        # State Machine Verification (Phase 2)
         if escrow.status != STATE_CREATED:
             raise Exception(f"Invalid state transition: Escrow in state '{escrow.status}' cannot be funded")
 
-        # Asset Custody Verification (Phase 3)
-        if deposit_value == u256(0):
+        # Native payment validation if available in gl.message.value
+        msg_value = getattr(gl.message, "value", u256(0))
+        actual_value = msg_value if msg_value > u256(0) else deposit_value
+
+        if actual_value == u256(0):
             raise Exception("Deposit value must be greater than zero")
 
-        escrow.deposited_amount = deposit_value
-        escrow.remaining_amount = deposit_value
+        escrow.deposited_amount = actual_value
+        escrow.remaining_amount = actual_value
         escrow.released_amount = u256(0)
         escrow.refunded_amount = u256(0)
 
-        # Financial Invariant Enforcement
-        assert escrow.deposited_amount == escrow.released_amount + escrow.refunded_amount + escrow.remaining_amount, "Invariant violation"
+        self._verify_accounting_invariant(escrow)
 
-        # Transition to OPEN_FOR_CLAIM if contractor is unassigned, else ACTIVE
         if escrow.contractor == ZERO_ADDRESS:
             escrow.status = STATE_OPEN_FOR_CLAIM
         else:
@@ -190,7 +205,6 @@ class IntelligentEscrow(gl.Contract):
         if escrow.status != STATE_OPEN_FOR_CLAIM:
             raise Exception(f"Invalid state: Escrow is in '{escrow.status}' state, not open for claim")
 
-        # Authorization: Client cannot claim their own bounty (Phase 6)
         if gl.message.sender_address == escrow.client:
             raise Exception("Unauthorized: Clients cannot claim their own escrow bounties")
 
@@ -198,7 +212,7 @@ class IntelligentEscrow(gl.Contract):
         escrow.status = STATE_ACTIVE
 
     # =========================================================
-    # 4. SUBMIT DELIVERABLE (CONTRACTOR)
+    # 4. SUBMIT DELIVERABLE (CONTRACTOR ONLY)
     # =========================================================
 
     @gl.public.write
@@ -214,17 +228,20 @@ class IntelligentEscrow(gl.Contract):
         if escrow.status != STATE_ACTIVE:
             raise Exception(f"Invalid state: Escrow is in '{escrow.status}' state, cannot accept submissions")
 
-        # Authorization: Only assigned contractor can submit (Phase 6)
+        # Authorization: ONLY assigned contractor can submit (Phase 6)
         if gl.message.sender_address != escrow.contractor:
             raise Exception("Unauthorized: Only the assigned contractor can submit deliverables")
 
-        if not deliverable_notes or len(deliverable_notes) > 4000:
-            raise Exception("Deliverable notes must be non-empty and under 4000 characters")
+        if not deliverable_url or not (deliverable_url.startswith("http://") or deliverable_url.startswith("https://")):
+            raise Exception("Deliverable URL must be non-empty and start with http:// or https://")
 
         if len(deliverable_url) > 1000:
             raise Exception("Deliverable URL exceeds 1000 characters limit")
 
-        # Evidence Integrity Hashing (Phase 9)
+        if not deliverable_notes or len(deliverable_notes) > 4000:
+            raise Exception("Deliverable notes must be non-empty and under 4000 characters")
+
+        # Canonical SHA-256 evidence hashing
         evidence_raw = f"{deliverable_url}:{deliverable_notes}".encode("utf-8")
         escrow.evidence_hash = hashlib.sha256(evidence_raw).hexdigest()
 
@@ -253,11 +270,10 @@ class IntelligentEscrow(gl.Contract):
         threshold = int(escrow.quality_threshold)
 
         # -----------------------------------------------------
-        # LEADER EVALUATION PROMPT (PHASE 7 ADVERSARIAL DEFENSE)
+        # LEADER EVALUATION PROMPT (UNTRUSTED DATA ISOLATION)
         # -----------------------------------------------------
 
         def evaluate():
-            # Prompt Structure: Strict isolation of Policy, Criteria, and Unverified Data
             prompt = f"""
 === SYSTEM POLICY ===
 You are an impartial GenLayer Validator Node running in GenVM sandbox.
@@ -298,7 +314,7 @@ Decision rule: Set decision to "ACCEPT" if and only if score >= {threshold} and 
             )
 
         # -----------------------------------------------------
-        # INDEPENDENT VALIDATOR EVALUATION (PHASE 8: NO ANCHORING)
+        # INDEPENDENT VALIDATOR EVALUATION (NO LEADER ANCHORING)
         # -----------------------------------------------------
 
         def validate(leader_wrapper):
@@ -316,7 +332,6 @@ Decision rule: Set decision to "ACCEPT" if and only if score >= {threshold} and 
             if not isinstance(leader_score, int) or leader_score < 0 or leader_score > 100:
                 return False
 
-            # Independent Validator Prompt (Does NOT anchor on leader decision)
             validator_prompt = f"""
 === SYSTEM POLICY ===
 You are an independent GenLayer Committee Validator.
@@ -356,7 +371,6 @@ Return ONLY JSON:
             val_decision = val_res.get("decision")
             val_score = val_res.get("score")
 
-            # Committee Consensus Agreement Check
             if val_decision != leader_decision:
                 return False
 
@@ -384,7 +398,7 @@ Return ONLY JSON:
         escrow.decision = decision
         escrow.score = u256(score_val)
 
-        # Independent Quality Threshold Enforcement by Protocol Logic (Phase 11)
+        # Enforce quality threshold in contract logic
         if decision == "ACCEPT" and score_val >= threshold:
             escrow.status = STATE_PAYOUT_CLAIMABLE
         else:
@@ -394,7 +408,7 @@ Return ONLY JSON:
         return escrow.status
 
     # =========================================================
-    # 6. APPEAL REJECTED VERDICT (CONTRACTOR - PHASE 12)
+    # 6. APPEAL REJECTED VERDICT (CONTRACTOR ONLY)
     # =========================================================
 
     @gl.public.write
@@ -407,16 +421,17 @@ Return ONLY JSON:
 
         escrow = self.escrows[escrow_id]
 
-        # Authorization (Phase 6)
         if gl.message.sender_address != escrow.contractor:
-            raise Exception("Unauthorized: Only the contractor can appeal a rejection")
+            raise Exception("Unauthorized: Only the assigned contractor can appeal a rejection")
 
         if escrow.status != STATE_REJECTED:
             raise Exception(f"Invalid state: Escrow in state '{escrow.status}' cannot be appealed")
 
-        # Limit to 1 appeal per escrow to prevent infinite loops (Phase 12)
         if escrow.appeal_count >= u256(1):
             raise Exception("Appeal limit reached: Only 1 appeal is allowed per escrow")
+
+        if not new_deliverable_url or not (new_deliverable_url.startswith("http://") or new_deliverable_url.startswith("https://")):
+            raise Exception("Appeal deliverable URL must be non-empty and start with http:// or https://")
 
         if not new_deliverable_notes:
             raise Exception("Appeal notes cannot be empty")
@@ -425,52 +440,59 @@ Return ONLY JSON:
         escrow.deliverable_notes = new_deliverable_notes
         escrow.appeal_count = escrow.appeal_count + u256(1)
 
-        # Re-compute evidence hash
+        # Recalculate evidence hash
         evidence_raw = f"{new_deliverable_url}:{new_deliverable_notes}".encode("utf-8")
         escrow.evidence_hash = hashlib.sha256(evidence_raw).hexdigest()
 
         escrow.status = STATE_APPEALED
 
     # =========================================================
-    # 7. SECURE PAYOUT DISBURSEMENT (CONTRACTOR - PHASE 4)
+    # 7. SECURE PAYOUT DISBURSEMENT (AUTOMATIC TO CONTRACTOR)
     # =========================================================
 
     @gl.public.write
-    def release_payout(
-        self,
-        escrow_id: u256,
-        destination_address: Address,
-    ) -> None:
+    def release_payout(self, escrow_id: u256) -> None:
 
         escrow = self.escrows[escrow_id]
 
         if escrow.status not in [STATE_APPROVED, STATE_PAYOUT_CLAIMABLE]:
             raise Exception(f"Invalid state: Escrow in state '{escrow.status}' is not approved for payout")
 
-        # Authorization: Payout can only be initiated by Contractor or Client (Phase 4 & 6)
         sender = gl.message.sender_address
         if sender != escrow.contractor and sender != escrow.client:
             raise Exception("Unauthorized: Payout can only be released by contractor or client")
 
-        if destination_address == ZERO_ADDRESS:
-            raise Exception("Invalid payout destination address")
-
-        # Financial Accounting Invariant Check (Phase 3 & 4)
         if escrow.remaining_amount == u256(0):
             raise Exception("Zero balance remaining in escrow vault")
 
         payout_val = escrow.remaining_amount
         escrow.released_amount = escrow.released_amount + payout_val
         escrow.remaining_amount = u256(0)
-        escrow.payout_address = destination_address
+        
+        # Payout destination is strictly locked to the contractor
+        escrow.payout_address = escrow.contractor
         escrow.status = STATE_PAYOUT_CLAIMED
 
-        # Enforce invariant
-        assert escrow.deposited_amount == escrow.released_amount + escrow.refunded_amount + escrow.remaining_amount, "Invariant violation on payout"
+        self._verify_accounting_invariant(escrow)
 
     # =========================================================
-    # 8. REFUNDS, EXPIRY & CANCELLATION (CLIENT - PHASE 5)
+    # 8. REFUNDS, EXPIRY & CANCELLATION (CLIENT ONLY)
     # =========================================================
+
+    @gl.public.write
+    def expire_escrow(self, escrow_id: u256, current_timestamp: u256) -> None:
+        escrow = self.escrows[escrow_id]
+
+        if escrow.status not in [STATE_OPEN_FOR_CLAIM, STATE_ACTIVE]:
+            raise Exception(f"Cannot expire escrow in state '{escrow.status}'")
+
+        if current_timestamp <= escrow.submission_deadline:
+            raise Exception("Submission deadline has not passed yet")
+
+        if escrow.deposited_amount > u256(0):
+            escrow.status = STATE_REFUNDABLE
+        else:
+            escrow.status = STATE_EXPIRED
 
     @gl.public.write
     def cancel_escrow(self, escrow_id: u256) -> None:
@@ -505,8 +527,7 @@ Return ONLY JSON:
         escrow.remaining_amount = u256(0)
         escrow.status = STATE_REFUNDED
 
-        # Enforce Invariant
-        assert escrow.deposited_amount == escrow.released_amount + escrow.refunded_amount + escrow.remaining_amount, "Invariant violation on refund"
+        self._verify_accounting_invariant(escrow)
 
     # =========================================================
     # 9. READ VIEWS (ON-CHAIN STATE QUERY)
@@ -539,6 +560,7 @@ Return ONLY JSON:
             "appeal_count": escrow.appeal_count,
             "evidence_hash": escrow.evidence_hash,
             "submission_deadline": escrow.submission_deadline,
+            "created_at": escrow.created_at,
         }
 
     @gl.public.view

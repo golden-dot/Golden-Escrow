@@ -93,10 +93,10 @@ def test_unauthorized_payout_release():
     contract.submit_deliverable(escrow_id, "https://valid.io", "Valid notes")
     contract.arbitrate(escrow_id)
 
-    # Attacker attempts to hijack payout release to their address
+    # Attacker attempts to hijack payout release
     gl.set_message_sender(attacker)
     try:
-        contract.release_payout(escrow_id, attacker)
+        contract.release_payout(escrow_id)
         assert False, "Attacker should NOT be allowed to release payouts"
     except Exception as e:
         assert "Unauthorized" in str(e)
@@ -134,7 +134,7 @@ def test_financial_accounting_invariants():
     contract.arbitrate(escrow_id)
 
     # Release payout
-    contract.release_payout(escrow_id, contractor)
+    contract.release_payout(escrow_id)
     data = contract.get_escrow(escrow_id)
     assert data["released_amount"] == u256(500)
     assert data["remaining_amount"] == u256(0)
@@ -142,7 +142,7 @@ def test_financial_accounting_invariants():
 
     # Attempt second payout release (Double Release Attack)
     try:
-        contract.release_payout(escrow_id, contractor)
+        contract.release_payout(escrow_id)
         assert False, "Double release must fail"
     except Exception as e:
         assert "not approved" in str(e) or "Zero balance" in str(e)

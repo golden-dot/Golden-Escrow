@@ -321,15 +321,14 @@ class APIClient {
   }
 
   // Release Payout to Contractor Address
-  async releasePayout(escrowId, callerAddress, destinationAddress) {
+  async releasePayout(escrowId, callerAddress) {
     try {
       if (this.baseUrl) {
         const res = await fetch(`${this.baseUrl}/api/escrows/${escrowId}/payout`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            caller_address: callerAddress || "0x0000000000000000000000000000000000000000",
-            destination_address: destinationAddress
+            caller_address: callerAddress || "0x0000000000000000000000000000000000000000"
           })
         });
         if (res.ok) {
@@ -347,7 +346,7 @@ class APIClient {
     const payoutVal = target.remaining_amount || target.amount || 100;
     target.released_amount = (target.released_amount || 0) + payoutVal;
     target.remaining_amount = 0;
-    target.payout_address = destinationAddress;
+    target.payout_address = target.contractor;
     target.status = "PAYOUT_CLAIMED";
 
     saveLocalEscrows(escrows);

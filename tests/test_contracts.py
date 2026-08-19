@@ -83,7 +83,7 @@ def test_intelligent_escrow_workflow():
     print(f"  ✓ GenVM AI Consensus Verdict: {escrow_data['decision']} with Score {escrow_data['score']}/100.")
 
     # 6. Release Payout to Contractor Address
-    contract.release_payout(escrow_id, contractor_addr)
+    contract.release_payout(escrow_id)
     escrow_data = contract.get_escrow(escrow_id)
     assert escrow_data["status"] == STATE_PAYOUT_CLAIMED
     assert escrow_data["released_amount"] == u256(400)
