@@ -4,6 +4,7 @@
  */
 
 const DEPLOYED_ESCROW_CONTRACT = "0xd0C596531ea0653Def4AAb200a9B8A3686bed552";
+const DEPLOYED_ORACLE_CONTRACT = "0xF19639Fcc392219334E0F6009001038fe98f2868";
 
 // In-Memory Local Datastore for static Vercel deployment
 const localStore = {
@@ -108,7 +109,9 @@ class APIClient {
       network: "GenLayer StudioNet",
       protocol_version: "v0.2.16",
       deployed_escrow_contract: DEPLOYED_ESCROW_CONTRACT,
-      studio_url: `https://studio.genlayer.com/contract/${DEPLOYED_ESCROW_CONTRACT}`,
+      deployed_oracle_contract: DEPLOYED_ORACLE_CONTRACT,
+      escrow_studio_url: `https://studio.genlayer.com/contract/${DEPLOYED_ESCROW_CONTRACT}`,
+      oracle_studio_url: `https://studio.genlayer.com/contract/${DEPLOYED_ORACLE_CONTRACT}`,
       active_validators: 5,
       total_staked: 194000
     };

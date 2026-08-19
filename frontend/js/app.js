@@ -4,8 +4,11 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-  const DEPLOYED_CONTRACT_ADDRESS = "0xd0C596531ea0653Def4AAb200a9B8A3686bed552";
-  const STUDIO_EXPLORER_URL = `https://studio.genlayer.com/contract/${DEPLOYED_CONTRACT_ADDRESS}`;
+  const DEPLOYED_ESCROW_CONTRACT = "0xd0C596531ea0653Def4AAb200a9B8A3686bed552";
+  const DEPLOYED_ORACLE_CONTRACT = "0xF19639Fcc392219334E0F6009001038fe98f2868";
+
+  const ESCROW_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ESCROW_CONTRACT}`;
+  const ORACLE_STUDIO_URL = `https://studio.genlayer.com/contract/${DEPLOYED_ORACLE_CONTRACT}`;
 
   // Theme Management
   const themeToggleBtn = document.getElementById('theme-toggle');
@@ -235,9 +238,14 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadNodeStatus() {
     try {
       const status = await API.getStatus();
-      const deployedContractEl = document.getElementById('stat-deployed-contract');
-      if (deployedContractEl) {
-        deployedContractEl.innerHTML = `<a href="${STUDIO_EXPLORER_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_CONTRACT_ADDRESS.slice(0,6)}...${DEPLOYED_CONTRACT_ADDRESS.slice(-4)}</a>`;
+      const deployedEscrowEl = document.getElementById('stat-deployed-escrow');
+      const deployedOracleEl = document.getElementById('stat-deployed-oracle');
+
+      if (deployedEscrowEl) {
+        deployedEscrowEl.innerHTML = `<a href="${ESCROW_STUDIO_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_ESCROW_CONTRACT.slice(0,6)}...${DEPLOYED_ESCROW_CONTRACT.slice(-4)}</a>`;
+      }
+      if (deployedOracleEl) {
+        deployedOracleEl.innerHTML = `<a href="${ORACLE_STUDIO_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_ORACLE_CONTRACT.slice(0,6)}...${DEPLOYED_ORACLE_CONTRACT.slice(-4)}</a>`;
       }
     } catch (err) {
       console.warn('Node status check failed:', err);
@@ -489,6 +497,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-size:0.85rem;margin-bottom:12px;">
             <strong>Pool:</strong> YES ${yesPercent}% (${m.total_yes} GEN) | NO ${(100 - yesPercent).toFixed(1)}% (${m.total_no} GEN)
           </div>
+          <div style="font-size:0.72rem;font-family:var(--font-mono);color:var(--primary);margin-bottom:8px;">
+            Deployed Oracle Contract: <a href="${ORACLE_STUDIO_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_ORACLE_CONTRACT.slice(0,6)}...${DEPLOYED_ORACLE_CONTRACT.slice(-4)}</a>
+          </div>
         </div>
         <div>${actionsHtml}</div>
       `;
@@ -651,7 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
         GenVM Validator Committee evaluated requirements and verified submission against specified criteria. Decision: <strong>${escrow.decision || 'ACCEPT'}</strong>.
       </p>
       <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--primary);">
-        Deployed Contract Address: <a href="${STUDIO_EXPLORER_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_CONTRACT_ADDRESS}</a>
+        Deployed Escrow Contract: <a href="${ESCROW_STUDIO_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_ESCROW_CONTRACT}</a>
       </div>
     `;
     document.getElementById('resolution-details-modal').classList.add('active');
