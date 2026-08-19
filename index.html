@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GenLayer Intellex Protocol | Autonomous AI Escrow & Truth Oracle</title>
-  <meta name="description" content="Decentralized Intelligent Escrow and Multi-Source Truth Oracle powered by GenLayer GenVM and Optimistic Democracy on GenLayer Bradbury Network.">
+  <meta name="description" content="Decentralized Intelligent Escrow Bounties and Multi-Source Truth Oracle powered by GenLayer GenVM and Optimistic Democracy on GenLayer Bradbury Network.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
@@ -94,14 +94,14 @@
         <div class="role-card-option selected" id="role-card-builder" data-role="builder">
           <span class="role-tag-badge">BUILDER / CONTRACTOR</span>
           <h3>Builder Account</h3>
-          <p>Browse open community bounties, claim tasks created by clients, submit deliverable PRs, verify tasks via AI, and receive payment payouts.</p>
+          <p>Browse open community escrow bounties, claim tasks created by clients, submit deliverable PRs, verify work via AI, and receive payment payouts.</p>
         </div>
 
         <!-- Option B: Client / Buyer -->
         <div class="role-card-option" id="role-card-client" data-role="client">
           <span class="role-tag-badge">CLIENT / BUYER</span>
           <h3>Client Account</h3>
-          <p>Create escrow tasks, deposit escrow funds to contract address to publicize bounties globally, and review AI verification reports.</p>
+          <p>Deploy escrow bounty vaults, deposit funds into the smart contract to publicize bounties globally, and review AI verification reports.</p>
         </div>
 
         <!-- Option C: DAO Arbiter -->
@@ -159,7 +159,7 @@
       <!-- Navigation Tabs -->
       <nav class="nav-links">
         <button class="nav-tab active" data-tab="escrows" id="nav-tab-escrows">
-          Intelligent Escrow
+          Intelligent Escrow Bounties
         </button>
         <button class="nav-tab" data-tab="oracle" id="nav-tab-oracle">
           TruthForge Oracle
@@ -188,16 +188,16 @@
         </div>
         <div class="role-hero-actions">
           <button class="action-btn" id="role-primary-action-btn">
-            + Deploy New Escrow Vault
+            + Deploy New Escrow Bounty
           </button>
         </div>
       </section>
 
       <!-- Network Telemetry -->
       <section class="hero-banner">
-        <h2 class="hero-title">Autonomous AI-Governed Escrow &amp; <span class="highlight">Intelligent Contracts</span></h2>
+        <h2 class="hero-title">Autonomous AI-Governed <span class="highlight">Escrow Bounties</span> &amp; Intelligent Contracts</h2>
         <p class="hero-desc">
-          Execute milestone-based agreements and prediction markets with zero human intermediary delay. GenLayer Intelligent Contracts run LLM reasoning and real-time web scrapers directly inside GenVM, verified via Optimistic Democracy consensus on GenLayer Bradbury.
+          Creating a bounty task deploys an AI-governed Intelligent Escrow Vault on GenLayer Bradbury. Milestone payouts are verified autonomously by LLM reasoning and real-time web scrapers running inside GenVM, secured by Optimistic Democracy consensus.
         </p>
 
         <div class="network-stats-row">
@@ -230,26 +230,26 @@
         </div>
       </section>
 
-      <!-- TAB 1: INTELLIGENT ESCROW -->
+      <!-- TAB 1: INTELLIGENT ESCROW BOUNTIES -->
       <section class="tab-content active" id="escrows-tab">
         <div class="section-header">
           <div class="section-title" id="escrow-section-title">
-            Escrow Marketplace &amp; Tasks
+            Intelligent Escrow Bounties &amp; Tasks
           </div>
           <button class="action-btn" id="open-create-escrow-btn">
-            + Deploy New Escrow
+            + Deploy New Escrow Bounty
           </button>
         </div>
 
         <div class="search-filter-section">
           <div class="search-box-wrapper">
-            <input type="text" class="search-input" id="escrow-search-input" placeholder="Search tasks by title, category, requirements, or wallet address...">
+            <input type="text" class="search-input" id="escrow-search-input" placeholder="Search bounties by title, category, requirements, or wallet address...">
           </div>
 
           <div class="filter-chips">
-            <button class="filter-chip active" data-filter="all">All Tasks (<span id="count-all">0</span>)</button>
+            <button class="filter-chip active" data-filter="all">All Bounties (<span id="count-all">0</span>)</button>
             <button class="filter-chip" data-filter="open">Open Bounties (<span id="count-open">0</span>)</button>
-            <button class="filter-chip" data-filter="my-jobs">My Tasks (<span id="count-my">0</span>)</button>
+            <button class="filter-chip" data-filter="my-jobs">My Bounties (<span id="count-my">0</span>)</button>
             <button class="filter-chip" data-filter="completed">Verified (<span id="count-completed">0</span>)</button>
           </div>
         </div>
@@ -279,17 +279,17 @@
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- MODAL 1: CREATE ESCROW -->
+    <!-- MODAL 1: CREATE ESCROW BOUNTY -->
     <div class="modal-overlay" id="create-escrow-modal">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">Deploy Escrow Vault</h3>
+          <h3 class="modal-title">Deploy Escrow Bounty Vault</h3>
           <button class="close-btn" onclick="window.closeModals()">&times;</button>
         </div>
 
         <form id="create-escrow-form">
           <div class="form-group">
-            <label class="form-label">Task Title</label>
+            <label class="form-label">Bounty Task Title</label>
             <input type="text" class="form-control" id="escrow-title" placeholder="e.g. Smart Contract Security Audit" required>
           </div>
           <div class="form-group">
@@ -302,7 +302,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">Project Description</label>
+            <label class="form-label">Bounty Description</label>
             <textarea class="form-control" id="escrow-desc" placeholder="Summary of required deliverable and objectives..." required></textarea>
           </div>
 
@@ -319,7 +319,7 @@
               <input type="text" class="form-control" id="escrow-contractor" placeholder="0x...">
             </div>
             <div class="form-group">
-              <label class="form-label">Vault Deposit Amount (GEN)</label>
+              <label class="form-label">Escrow Deposit Amount (GEN)</label>
               <input type="number" class="form-control" id="escrow-amount" placeholder="e.g. 500" min="10" required>
             </div>
           </div>
@@ -334,7 +334,7 @@
           </div>
 
           <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);margin-bottom:1rem;font-size:0.82rem;color:var(--text-main);">
-            <strong>Payment Required to Publicize:</strong> Submitting this task will create the escrow draft. You must send the deposit to the contract address to publicize the bounty to Builders.
+            <strong>Payment Required to Publicize:</strong> Submitting this bounty will create the escrow draft. You must send the deposit to the smart contract address to publicize the bounty to Builders.
           </div>
 
           <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:0.5rem;">
@@ -344,11 +344,11 @@
       </div>
     </div>
 
-    <!-- MODAL 1.5: DEPOSIT PAYMENT REQUIRED TO PUBLICIZE BOUNTY -->
+    <!-- MODAL 1.5: DEPOSIT PAYMENT REQUIRED TO PUBLICIZE ESCROW BOUNTY -->
     <div class="modal-overlay" id="deposit-payment-modal">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">Deposit Required to Publicize Bounty</h3>
+          <h3 class="modal-title">Deposit Required to Publicize Escrow Bounty</h3>
           <button class="close-btn" onclick="window.closeModals()">&times;</button>
         </div>
 

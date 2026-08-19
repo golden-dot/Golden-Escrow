@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
       builder: {
         title: 'BUILDER',
         welcome: `Welcome, ${username} (Builder & Contractor)`,
-        desc: 'Browse open community bounties created by clients across the network, claim tasks, submit deliverables, verify work via GenVM AI, and receive payouts.',
+        desc: 'Browse open community escrow bounties created by clients across the network, claim tasks, submit deliverables, verify work via GenVM AI, and receive payouts.',
         primaryAction: 'Browse All Open Bounties',
         primaryActionTab: 'open-bounties',
         showDeployBtn: false
@@ -325,8 +325,8 @@ document.addEventListener('DOMContentLoaded', () => {
       client: {
         title: 'CLIENT',
         welcome: `Welcome, ${username} (Client & Buyer)`,
-        desc: 'Deploy AI-governed milestone escrows, deposit project funds into the contract, and publicize your bounties to Builders worldwide. Your created bounties remain active for builders across sessions.',
-        primaryAction: '+ Deploy New Escrow Vault',
+        desc: 'Deploy AI-governed milestone escrow bounty vaults, deposit project funds into the contract, and publicize your bounties to Builders worldwide. Your created bounties remain active for builders across sessions.',
+        primaryAction: '+ Deploy New Escrow Bounty',
         primaryActionTab: 'create-escrow',
         showDeployBtn: true
       },
@@ -452,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Load & Render Escrows (Filter out any 0xAliceClient / 0xDevinClient legacy items)
+  // Load & Render Escrows (Filter out legacy demo items)
   async function loadEscrows() {
     try {
       let escrows = await API.getEscrows();
@@ -476,10 +476,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.deleteEscrowTask = async (escrowId) => {
-    if (confirm(`Are you sure you want to delete Escrow Task #${escrowId}?`)) {
+    if (confirm(`Are you sure you want to delete Escrow Bounty #${escrowId}?`)) {
       try {
         await API.deleteEscrow(escrowId);
-        showToast(`Escrow #${escrowId} deleted successfully.`, 'info');
+        showToast(`Escrow Bounty #${escrowId} deleted successfully.`, 'info');
         loadEscrows();
       } catch (e) {
         showToast('Error deleting task: ' + e.message, 'danger');
@@ -489,14 +489,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // BUILDER CANCEL / RELEASE CLAIMED BOUNTY
   window.cancelClaimedBounty = async (escrowId, btnElement) => {
-    if (confirm(`Are you sure you want to cancel your claim on Escrow #${escrowId}? The bounty will return to the Open Marketplace for other builders.`)) {
+    if (confirm(`Are you sure you want to cancel your claim on Escrow Bounty #${escrowId}? The bounty will return to the Open Marketplace for other builders.`)) {
       if (btnElement) {
         btnElement.classList.add('btn-loading');
         btnElement.disabled = true;
       }
       try {
         await API.cancelClaimedBounty(escrowId);
-        showToast(`Escrow #${escrowId} claim cancelled! Returned to Open Bounty Marketplace.`, 'info');
+        showToast(`Escrow Bounty #${escrowId} claim cancelled! Returned to Open Bounty Marketplace.`, 'info');
         loadEscrows();
       } catch (err) {
         if (btnElement) {
@@ -582,8 +582,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filtered.length === 0) {
       escrowsContainer.innerHTML = `
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
-          <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrows found</div>
-          <div>${isClient ? 'Click "+ Deploy New Escrow" to post a task and send deposit!' : 'Waiting for clients to post and deposit bounties.'}</div>
+          <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrow bounties found</div>
+          <div>${isClient ? 'Click "+ Deploy New Escrow Bounty" to post a task and send deposit!' : 'Waiting for clients to post and deposit bounties.'}</div>
         </div>
       `;
       return;
@@ -691,7 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div>
           <div class="card-header">
             <div>
-              <span class="escrow-id-badge">ESCROW #${id}</span>
+              <span class="escrow-id-badge">ESCROW BOUNTY #${id}</span>
               ${escrow.category ? `<span style="margin-left:6px;font-size:0.7rem;color:var(--primary);">${escrow.category}</span>` : ''}
             </div>
             <span class="status-badge ${isAwaitingDeposit ? 'pending' : (isOpenForClaim ? 'open_for_claim' : (escrow.status === 'ACCEPTED' ? 'approved' : statusClass))}">
@@ -760,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
         role: 'contractor',
         participant_address: state.currentUsername || state.currentEmail || "Builder"
       });
-      showToast(`Successfully claimed Escrow #${escrowId}! Assigned as Contractor.`, 'success');
+      showToast(`Successfully claimed Escrow Bounty #${escrowId}! Assigned as Contractor.`, 'success');
       loadEscrows();
     } catch (err) {
       showToast('Error claiming task: ' + err.message, 'danger');
@@ -928,7 +928,7 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmDepositSentBtn.disabled = false;
         window.closeModals();
 
-        showToast(`Payment Confirmed & Verified! Bounty #${state.pendingDepositEscrowId} is now PUBLICIZED to all Builders worldwide!`, 'success');
+        showToast(`Payment Confirmed & Verified! Escrow Bounty #${state.pendingDepositEscrowId} is now PUBLICIZED to all Builders worldwide!`, 'success');
         loadEscrows();
       } catch (e) {
         confirmDepositSentBtn.classList.remove('btn-loading');
