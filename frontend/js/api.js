@@ -10,7 +10,6 @@ const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v2/escrows";
 const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v2/markets";
 
-// NO PRE-SEEDED DEMO BOUNTIES (Only real Client-created bounties are stored & publicized)
 const DEFAULT_ESCROWS = [];
 
 // Helper to get local fallback escrows
@@ -109,7 +108,6 @@ class APIClient {
       quality_threshold: data.quality_threshold || 80,
       deliverable_url: "",
       deliverable_notes: "",
-      // UNPAID BOUNTIES START IN AWAITING_DEPOSIT AND ARE NOT PUBLICIZED
       status: "AWAITING_DEPOSIT",
       decision: "",
       score: 0,
@@ -151,6 +149,21 @@ class APIClient {
       await syncCloudEscrows(escrows);
     }
     return { success: true, message: "Claimed bounty as contractor" };
+  }
+
+  // ALLOW BUILDER TO CANCEL CLAIMED BOUNTY & RETURN TO OPEN MARKETPLACE
+  async cancelClaimedBounty(escrowId) {
+    const escrows = await fetchCloudEscrows();
+    const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    if (target) {
+      target.contractor = "0x0000000000000000000000000000000000000000";
+      target.deliverable_url = "";
+      target.deliverable_notes = "";
+      target.status = "OPEN_FOR_CLAIM";
+      await syncCloudEscrows(escrows);
+      return { success: true, message: `Bounty #${escrowId} claim cancelled and returned to Open Marketplace` };
+    }
+    throw new Error(`Escrow #${escrowId} not found`);
   }
 
   async submitDeliverable(data) {

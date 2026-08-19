@@ -1,6 +1,6 @@
 /**
  * app.js - Main Application Controller for GenLayer Intellex Protocol
- * Persistent Session & Global Bounty Marketplace with Deposit Verification
+ * Persistent Session & Global Bounty Marketplace with Deposit Verification & Builder Cancel Options
  * Network: GenLayer Bradbury
  */
 
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Load & Render Escrows (PUBLICIZED BOUNTIES VISIBLE TO ALL BUILDERS WORLDWIDE)
+  // Load & Render Escrows
   async function loadEscrows() {
     try {
       const escrows = await API.getEscrows();
@@ -463,6 +463,27 @@ document.addEventListener('DOMContentLoaded', () => {
         loadEscrows();
       } catch (e) {
         showToast('Error deleting task: ' + e.message, 'danger');
+      }
+    }
+  };
+
+  // BUILDER CANCEL / RELEASE CLAIMED BOUNTY
+  window.cancelClaimedBounty = async (escrowId, btnElement) => {
+    if (confirm(`Are you sure you want to cancel your claim on Escrow #${escrowId}? The bounty will return to the Open Marketplace for other builders.`)) {
+      if (btnElement) {
+        btnElement.classList.add('btn-loading');
+        btnElement.disabled = true;
+      }
+      try {
+        await API.cancelClaimedBounty(escrowId);
+        showToast(`Escrow #${escrowId} claim cancelled! Returned to Open Bounty Marketplace.`, 'info');
+        loadEscrows();
+      } catch (err) {
+        if (btnElement) {
+          btnElement.classList.remove('btn-loading');
+          btnElement.disabled = false;
+        }
+        showToast('Error cancelling claim: ' + err.message, 'danger');
       }
     }
   };
@@ -522,13 +543,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const clientOwnerLower = (escrow.client || '').toLowerCase();
       const isCreatorOfTask = (clientOwnerLower === currentUser || clientOwnerLower === currentEmail);
 
-      // RULE: UNPAID BOUNTIES ARE ONLY VISIBLE TO THE CREATOR CLIENT UNTIL DEPOSIT IS SENT
+      // UNPAID BOUNTIES ARE ONLY VISIBLE TO CREATOR CLIENT UNTIL DEPOSIT SENT
       if (!escrow.payment_received && !isCreatorOfTask) {
         return false;
       }
 
       if (state.activeFilter === 'open') {
-        // SHOW ALL PUBLICIZED OPEN BOUNTIES FOR BUILDERS
         return (escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'))) && escrow.payment_received;
       } else if (state.activeFilter === 'my-jobs') {
         return isCreatorOfTask || (escrow.contractor && (escrow.contractor.toLowerCase() === currentUser || escrow.contractor.toLowerCase() === currentEmail));
@@ -543,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
       escrowsContainer.innerHTML = `
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
           <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrows found</div>
-          <div>${isClient ? 'Click "+ Deploy New Escrow" to post a task!' : 'Check back soon for new open community bounties.'}</div>
+          <div>${isClient ? 'Click "+ Deploy New Escrow" to post a task and send deposit!' : 'Waiting for clients to post and deposit bounties.'}</div>
         </div>
       `;
       return;
@@ -556,10 +576,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = escrow.escrow_id || escrow.id;
       const isOpenForClaim = (escrow.status === 'OPEN_FOR_CLAIM' || (escrow.contractor && escrow.contractor.startsWith('0x0000'))) && escrow.payment_received;
       const isAwaitingDeposit = !escrow.payment_received || escrow.status === 'AWAITING_DEPOSIT';
-      const statusClass = isAwaitingDeposit ? 'pending' : (escrow.status ? escrow.status.toLowerCase() : 'pending');
+      const statusClass = isAwaitingDeposit ? 'pending' : (isOpenForClaim ? 'open_for_claim' : (escrow.status === 'ACCEPTED' ? 'approved' : (escrow.status ? escrow.status.toLowerCase() : 'pending')));
 
       const clientOwnerLower = (escrow.client || '').toLowerCase();
       const isCreatorOfTask = (clientOwnerLower === currentUser || clientOwnerLower === currentEmail);
+      const isAssignedContractor = (escrow.contractor || '').toLowerCase() === currentUser || (escrow.contractor || '').toLowerCase() === currentEmail;
 
       let actionBtnHtml = '';
       if (isAwaitingDeposit) {
@@ -589,18 +610,25 @@ document.addEventListener('DOMContentLoaded', () => {
           `;
         }
       } else if (escrow.status === 'ACTIVE' || escrow.status === 'PENDING') {
-        const isAssignedContractor = (escrow.contractor || '').toLowerCase() === currentUser || (escrow.contractor || '').toLowerCase() === currentEmail;
         actionBtnHtml = `
-          <div style="display:flex;gap:8px;align-items:center;">
-            ${isAssignedContractor ? `<button class="secondary-btn btn-sm" onclick="window.openSubmitModal(${id})">Submit Deliverable</button>` : ''}
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            ${isAssignedContractor ? `
+              <button class="secondary-btn btn-sm" onclick="window.openSubmitModal(${id})">Submit Deliverable</button>
+              <button class="secondary-btn btn-sm" style="border-color:var(--warning);color:var(--warning);" onclick="window.cancelClaimedBounty(${id}, this)">Cancel Claim</button>
+            ` : ''}
             ${isCreatorOfTask ? `<button class="secondary-btn btn-sm" style="border-color:var(--danger);color:var(--danger);" onclick="window.deleteEscrowTask(${id})">Delete</button>` : ''}
           </div>
         `;
       } else if (escrow.status === 'SUBMITTED') {
         actionBtnHtml = `
-          <button class="action-btn btn-sm" onclick="window.triggerAIArbitration(${id})">
-            Trigger GenVM AI Arbitration
-          </button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button class="action-btn btn-sm" onclick="window.triggerAIArbitration(${id})">
+              Trigger GenVM AI Arbitration
+            </button>
+            ${isAssignedContractor ? `
+              <button class="secondary-btn btn-sm" style="border-color:var(--warning);color:var(--warning);" onclick="window.cancelClaimedBounty(${id}, this)">Cancel Claim</button>
+            ` : ''}
+          </div>
         `;
       } else if (escrow.status === 'VERIFIED_AWAITING_PAYOUT_ADDRESS') {
         actionBtnHtml = `
