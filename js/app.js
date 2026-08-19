@@ -1,6 +1,6 @@
 /**
  * app.js - Main Application Controller for GenLayer Intellex Protocol
- * Persistent Session & Global Bounty Marketplace with Modernized EIP-1193 Web3 Wallet Extension & Mandatory Payment Verification
+ * Authoritative Single Source of Truth: GenLayer Intelligent Contract (IntelligentEscrow.py)
  * Network: GenLayer Bradbury
  */
 
@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchQuery: '',
     activeFilter: 'all',
     pendingDepositEscrowId: null,
+    pendingDepositAmount: 0,
     activePayoutEscrowId: null
   };
 
@@ -128,50 +129,42 @@ document.addEventListener('DOMContentLoaded', () => {
   window.detectAvailableWallets = () => {
     const list = [];
 
-    // 1. MetaMask
     if (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isRabby) {
       list.push({ id: 'metamask', provider: window.ethereum, installed: true });
     } else {
       list.push({ id: 'metamask', provider: null, installed: false, downloadUrl: 'https://metamask.io/download/' });
     }
 
-    // 2. Rabby Wallet
     if (window.ethereum && window.ethereum.isRabby) {
       list.push({ id: 'rabby', provider: window.ethereum, installed: true });
     } else {
       list.push({ id: 'rabby', provider: null, installed: false, downloadUrl: 'https://rabby.io/' });
     }
 
-    // 3. Coinbase Wallet
     if (window.ethereum && (window.ethereum.isCoinbaseWallet || window.coinbaseWalletExtension)) {
       list.push({ id: 'coinbase', provider: window.ethereum, installed: true });
     } else {
       list.push({ id: 'coinbase', provider: null, installed: false, downloadUrl: 'https://www.coinbase.com/wallet' });
     }
 
-    // 4. Trust Wallet
     if (window.ethereum && (window.ethereum.isTrust || window.trustwallet)) {
       list.push({ id: 'trust', provider: window.trustwallet || window.ethereum, installed: true });
     } else {
       list.push({ id: 'trust', provider: null, installed: false, downloadUrl: 'https://trustwallet.com/' });
     }
 
-    // 5. Rainbow Wallet
     if (window.ethereum && window.ethereum.isRainbow) {
       list.push({ id: 'rainbow', provider: window.ethereum, installed: true });
     }
 
-    // 6. OKX Wallet
     if (window.okxwallet || (window.ethereum && window.ethereum.isOKXWallet)) {
       list.push({ id: 'okx', provider: window.okxwallet || window.ethereum, installed: true });
     }
 
-    // 7. Phantom / Solflare Web3
     if (window.phantom && window.phantom.ethereum) {
       list.push({ id: 'phantom', provider: window.phantom.ethereum, installed: true });
     }
 
-    // 8. Generic Injected Provider fallback
     if (window.ethereum && !list.some(w => w.installed && w.provider === window.ethereum)) {
       list.push({ id: 'injected', provider: window.ethereum, installed: true });
     }
@@ -300,21 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   };
-
-  // EIP-1193 Auto Listeners for provider account/network changes
-  if (window.ethereum && window.ethereum.on) {
-    window.ethereum.on('accountsChanged', (accounts) => {
-      if (accounts && accounts.length > 0) {
-        state.connectedWallet = accounts[0];
-        localStorage.setItem('intellex_connected_wallet', accounts[0]);
-        showToast(`Wallet account switched to: ${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`, 'info');
-      } else {
-        state.connectedWallet = '';
-        localStorage.removeItem('intellex_connected_wallet');
-      }
-      window.updateWalletUI();
-    });
-  }
 
   // 1-Click Contract Address Copy Helper
   window.copyContractAddress = (address) => {
@@ -703,15 +681,6 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadEscrows() {
     try {
       let escrows = await API.getEscrows();
-      if (Array.isArray(escrows)) {
-        escrows = escrows.filter(e => {
-          if (!e) return false;
-          if (e.client === '0xAliceClient' || e.client === '0xDevinClient') return false;
-          return true;
-        });
-      } else {
-        escrows = [];
-      }
       state.escrows = escrows;
       renderEscrows();
     } catch (err) {
@@ -727,18 +696,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  window.deleteEscrowTask = async (escrowId) => {
-    if (confirm(`Are you sure you want to delete Escrow Bounty #${escrowId}?`)) {
-      try {
-        await API.deleteEscrow(escrowId);
-        showToast(`Escrow Bounty #${escrowId} deleted successfully.`, 'info');
-        loadEscrows();
-      } catch (e) {
-        showToast('Error deleting task: ' + e.message, 'danger');
-      }
-    }
-  };
-
   // BUILDER CANCEL / RELEASE CLAIMED BOUNTY
   window.cancelClaimedBounty = async (escrowId, btnElement) => {
     if (confirm(`Are you sure you want to cancel your claim on Escrow Bounty #${escrowId}? The bounty will return to the Open Marketplace for other builders.`)) {
@@ -747,7 +704,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnElement.disabled = true;
       }
       try {
-        await API.cancelClaimedBounty(escrowId);
+        await API.joinEscrow({ escrow_id: escrowId, participant_address: "0x0000000000000000000000000000000000000000" });
         showToast(`Escrow Bounty #${escrowId} claim cancelled! Returned to Open Bounty Marketplace.`, 'info');
         loadEscrows();
       } catch (err) {
@@ -760,44 +717,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Publicize all unpublicized bounties for current client via payment confirmation
-  window.publicizeAllMyBounties = async (btnElement) => {
-    const user = state.connectedWallet || state.currentUsername || state.currentEmail || 'Client';
-    if (btnElement) {
-      btnElement.classList.add('btn-loading');
-      btnElement.disabled = true;
-    }
-    try {
-      const res = await API.publicizeAllClientBounties(user);
-      if (btnElement) {
-        btnElement.classList.remove('btn-loading');
-        btnElement.disabled = false;
-      }
-      showToast(`Payment processed! Publicized ${res.count} created bounties to Builders worldwide!`, 'success');
-      loadEscrows();
-    } catch (e) {
-      if (btnElement) {
-        btnElement.classList.remove('btn-loading');
-        btnElement.disabled = false;
-      }
-      showToast('Error publicizing bounties: ' + e.message, 'danger');
-    }
-  };
-
   // Open Deposit Required Modal for unpaid task
-  window.openDepositRequiredModal = (escrowId) => {
+  window.openDepositRequiredModal = (escrowId, amount) => {
     const escrow = state.escrows.find(e => (e.escrow_id || e.id) == escrowId);
-    if (!escrow) return;
-
     state.pendingDepositEscrowId = escrowId;
+    state.pendingDepositAmount = amount || (escrow ? escrow.amount : 100);
+
     const titleTag = document.getElementById('deposit-task-title');
     const amountTag = document.getElementById('deposit-task-amount');
     const fromWalletTag = document.getElementById('payment-from-wallet');
     const amountDisplayTag = document.getElementById('payment-amount-display');
 
-    if (titleTag) titleTag.textContent = escrow.title;
-    if (amountTag) amountTag.textContent = `${escrow.amount} GEN`;
-    if (amountDisplayTag) amountDisplayTag.textContent = `${escrow.amount} GEN`;
+    if (titleTag) titleTag.textContent = escrow ? escrow.title : `Bounty #${escrowId}`;
+    if (amountTag) amountTag.textContent = `${state.pendingDepositAmount} GEN`;
+    if (amountDisplayTag) amountDisplayTag.textContent = `${state.pendingDepositAmount} GEN`;
     if (fromWalletTag) {
       fromWalletTag.textContent = state.connectedWallet 
         ? `${state.connectedWallet.slice(0,6)}...${state.connectedWallet.slice(-4)}`
@@ -805,6 +738,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('deposit-payment-modal').classList.add('active');
+  };
+
+  // CLIENT CLAIM REFUND
+  window.claimRefund = async (escrowId, btnElement) => {
+    const user = state.connectedWallet || state.currentUsername || state.currentEmail || 'Client';
+    if (btnElement) {
+      btnElement.classList.add('btn-loading');
+      btnElement.disabled = true;
+    }
+    try {
+      await API.claimRefund(escrowId, user);
+      if (btnElement) {
+        btnElement.classList.remove('btn-loading');
+        btnElement.disabled = false;
+      }
+      showToast(`Refund claimed for Escrow Bounty #${escrowId}!`, 'success');
+      loadEscrows();
+    } catch (e) {
+      if (btnElement) {
+        btnElement.classList.remove('btn-loading');
+        btnElement.disabled = false;
+      }
+      showToast('Refund error: ' + e.message, 'danger');
+    }
+  };
+
+  // CONTRACTOR APPEAL REJECTION
+  window.openAppealModal = (escrowId) => {
+    state.activePayoutEscrowId = escrowId;
+    const notesInput = document.getElementById('deliv-notes');
+    if (notesInput) notesInput.value = '';
+    document.getElementById('submit-deliverable-modal').classList.add('active');
   };
 
   function renderEscrows() {
@@ -816,13 +781,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const isBuilder = state.currentRole === 'builder';
     const isClient = state.currentRole === 'client';
 
-    const countAll = state.escrows.filter(e => e.payment_received || e.status === 'OPEN_FOR_CLAIM' || (e.client && (e.client.toLowerCase() === currentUser || e.client.toLowerCase() === currentEmail))).length;
-    const countOpen = state.escrows.filter(e => (e.status === 'OPEN_FOR_CLAIM' || !e.contractor || e.contractor.startsWith('0x0000')) && (e.payment_received || e.status === 'OPEN_FOR_CLAIM')).length;
+    const countAll = state.escrows.length;
+    const countOpen = state.escrows.filter(e => e.status === 'OPEN_FOR_CLAIM' || (!e.contractor || e.contractor.startsWith('0x0000'))).length;
     const countMy = state.escrows.filter(e => 
       (e.client && (e.client.toLowerCase() === currentUser || e.client.toLowerCase() === currentEmail)) || 
       (e.contractor && (e.contractor.toLowerCase() === currentUser || e.contractor.toLowerCase() === currentEmail))
     ).length;
-    const countCompleted = state.escrows.filter(e => e.status === 'ACCEPTED' || e.status === 'COMPLETED').length;
+    const countCompleted = state.escrows.filter(e => e.status === 'APPROVED' || e.status === 'PAYOUT_CLAIMABLE' || e.status === 'PAYOUT_CLAIMED').length;
 
     const elAll = document.getElementById('count-all');
     const elOpen = document.getElementById('count-open');
@@ -833,27 +798,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elOpen) elOpen.textContent = countOpen;
     if (elMy) elMy.textContent = countMy;
     if (elCompleted) elCompleted.textContent = countCompleted;
-
-    // Check if Client has any unpublicized created bounties
-    const unpublicizedCreatedBounties = state.escrows.filter(e => {
-      const cLower = (e.client || '').toLowerCase();
-      const isOwner = (cLower === currentUser || cLower === currentEmail);
-      return isOwner && (!e.payment_received && e.status !== 'OPEN_FOR_CLAIM');
-    });
-
-    if (isClient && unpublicizedCreatedBounties.length > 0) {
-      const banner = document.createElement('div');
-      banner.style.cssText = "grid-column:1/-1;margin-bottom:1rem;padding:12px 16px;background:rgba(245, 158, 11, 0.1);border:1px solid rgba(245, 158, 11, 0.3);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;";
-      banner.innerHTML = `
-        <div style="font-size:0.88rem;color:var(--text-main);">
-          You have <strong style="color:var(--warning);">${unpublicizedCreatedBounties.length}</strong> created bounty draft(s) awaiting payment deposit to publicize.
-        </div>
-        <button class="action-btn btn-sm" onclick="window.publicizeAllMyBounties(this)">
-          Process Payment &amp; Publicize All Created Bounties
-        </button>
-      `;
-      escrowsContainer.appendChild(banner);
-    }
 
     let filtered = state.escrows.filter(escrow => {
       const matchesSearch = !state.searchQuery || 
@@ -868,28 +812,26 @@ document.addEventListener('DOMContentLoaded', () => {
       const clientOwnerLower = (escrow.client || '').toLowerCase();
       const isCreatorOfTask = (clientOwnerLower === currentUser || clientOwnerLower === currentEmail);
 
-      // UNPAID BOUNTIES ARE ONLY VISIBLE TO CREATOR CLIENT UNTIL DEPOSIT SENT
       if (!escrow.payment_received && !isCreatorOfTask && escrow.status !== 'OPEN_FOR_CLAIM') {
         return false;
       }
 
       if (state.activeFilter === 'open') {
-        // OPEN BOUNTIES TAB: Show all paid or publicized bounties open for claim
-        return escrow.status === 'OPEN_FOR_CLAIM' || escrow.payment_received === true;
+        return escrow.status === 'OPEN_FOR_CLAIM' || (!escrow.contractor || escrow.contractor.startsWith('0x0000'));
       } else if (state.activeFilter === 'my-jobs') {
         return isCreatorOfTask || (escrow.contractor && (escrow.contractor.toLowerCase() === currentUser || escrow.contractor.toLowerCase() === currentEmail));
       } else if (state.activeFilter === 'completed') {
-        return escrow.status === 'ACCEPTED' || escrow.status === 'COMPLETED';
+        return escrow.status === 'APPROVED' || escrow.status === 'PAYOUT_CLAIMABLE' || escrow.status === 'PAYOUT_CLAIMED';
       }
 
       return true;
     });
 
-    if (filtered.length === 0 && unpublicizedCreatedBounties.length === 0) {
+    if (filtered.length === 0) {
       escrowsContainer.innerHTML = `
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
           <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrow bounties found</div>
-          <div>${isClient ? 'Click "+ Deploy New Escrow Bounty" to post a task and process payment deposit!' : 'Waiting for clients to post and deposit bounties.'}</div>
+          <div>${isClient ? 'Click "+ Deploy New Escrow Bounty" to create an on-chain milestone vault!' : 'Waiting for clients to post and deposit bounties.'}</div>
         </div>
       `;
       return;
@@ -900,34 +842,24 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'escrow-card';
 
       const id = escrow.escrow_id || escrow.id;
-      const isOpenForClaim = (escrow.status === 'OPEN_FOR_CLAIM' || !escrow.contractor || escrow.contractor.startsWith('0x0000')) && (escrow.payment_received || escrow.status === 'OPEN_FOR_CLAIM');
-      const isAwaitingDeposit = (!escrow.payment_received && escrow.status !== 'OPEN_FOR_CLAIM') || escrow.status === 'AWAITING_DEPOSIT';
-      const statusClass = isAwaitingDeposit ? 'pending' : (isOpenForClaim ? 'open_for_claim' : (escrow.status === 'ACCEPTED' ? 'approved' : (escrow.status ? escrow.status.toLowerCase() : 'pending')));
+      const status = escrow.status || 'CREATED';
+      const isOpenForClaim = status === 'OPEN_FOR_CLAIM' || (!escrow.contractor || escrow.contractor.startsWith('0x0000'));
+      const isAwaitingDeposit = status === 'CREATED' || !escrow.payment_received;
 
       const clientOwnerLower = (escrow.client || '').toLowerCase();
       const isCreatorOfTask = (clientOwnerLower === currentUser || clientOwnerLower === currentEmail);
       const isAssignedContractor = (escrow.contractor || '').toLowerCase() === currentUser || (escrow.contractor || '').toLowerCase() === currentEmail;
 
       let actionBtnHtml = '';
-      if (isAwaitingDeposit) {
-        if (isCreatorOfTask) {
-          actionBtnHtml = `
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <button class="action-btn btn-sm" style="background:var(--warning);color:#000;" onclick="window.openDepositRequiredModal(${id})">
-                Pay Deposit &amp; Publicize
-              </button>
-              <button class="secondary-btn btn-sm" style="border-color:var(--danger);color:var(--danger);" onclick="window.deleteEscrowTask(${id})">Delete</button>
-            </div>
-          `;
-        }
+      if (isAwaitingDeposit && isCreatorOfTask) {
+        actionBtnHtml = `
+          <button class="action-btn btn-sm" style="background:var(--warning);color:#000;" onclick="window.openDepositRequiredModal(${id}, ${escrow.amount})">
+            Deposit &amp; Fund Vault
+          </button>
+        `;
       } else if (isOpenForClaim) {
         if (isCreatorOfTask) {
-          actionBtnHtml = `
-            <div style="display:flex;gap:8px;align-items:center;">
-              <span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Created by You</span>
-              <button class="secondary-btn btn-sm" style="border-color:var(--danger);color:var(--danger);" onclick="window.deleteEscrowTask(${id})">Delete</button>
-            </div>
-          `;
+          actionBtnHtml = `<span style="font-size:0.75rem;color:var(--text-muted);font-weight:600;">Created by You</span>`;
         } else {
           actionBtnHtml = `
             <button class="action-btn btn-sm" onclick="window.claimEscrowBounty(${id}, this)">
@@ -935,73 +867,71 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
           `;
         }
-      } else if (escrow.status === 'ACTIVE' || escrow.status === 'PENDING') {
+      } else if (status === 'ACTIVE') {
+        if (isAssignedContractor) {
+          actionBtnHtml = `
+            <button class="action-btn btn-sm" onclick="window.openSubmitModal(${id})">Submit Deliverable</button>
+          `;
+        }
+      } else if (status === 'SUBMITTED' || status === 'APPEALED') {
         actionBtnHtml = `
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            ${isAssignedContractor ? `
-              <button class="secondary-btn btn-sm" onclick="window.openSubmitModal(${id})">Submit Deliverable</button>
-              <button class="secondary-btn btn-sm" style="border-color:var(--warning);color:var(--warning);" onclick="window.cancelClaimedBounty(${id}, this)">Cancel Claim</button>
-            ` : ''}
-            ${isCreatorOfTask ? `<button class="secondary-btn btn-sm" style="border-color:var(--danger);color:var(--danger);" onclick="window.deleteEscrowTask(${id})">Delete</button>` : ''}
-          </div>
-        `;
-      } else if (escrow.status === 'SUBMITTED') {
-        actionBtnHtml = `
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <button class="action-btn btn-sm" onclick="window.triggerAIArbitration(${id})">
-              Trigger GenVM AI Arbitration
-            </button>
-            ${isAssignedContractor ? `
-              <button class="secondary-btn btn-sm" style="border-color:var(--warning);color:var(--warning);" onclick="window.cancelClaimedBounty(${id}, this)">Cancel Claim</button>
-            ` : ''}
-          </div>
-        `;
-      } else if (escrow.status === 'VERIFIED_AWAITING_PAYOUT_ADDRESS') {
-        actionBtnHtml = `
-          <button class="action-btn btn-sm" style="background:var(--accent-purple);" onclick="window.promptPayoutAddressModal(${id})">
-            Enter Payout Destination Address
+          <button class="action-btn btn-sm" onclick="window.triggerAIArbitration(${id})">
+            Trigger GenVM AI Consensus
           </button>
         `;
-      } else if (escrow.status === 'ACCEPTED' || escrow.status === 'REJECTED') {
-        actionBtnHtml = `<button class="secondary-btn btn-sm" onclick="window.viewResolutionReport(${id})">View AI Verification Report</button>`;
+      } else if (status === 'APPROVED' || status === 'PAYOUT_CLAIMABLE') {
+        if (isAssignedContractor || isCreatorOfTask) {
+          actionBtnHtml = `
+            <button class="action-btn btn-sm" style="background:var(--accent-purple);" onclick="window.promptPayoutAddressModal(${id})">
+              Release Payout to Address
+            </button>
+          `;
+        }
+      } else if (status === 'REJECTED') {
+        actionBtnHtml = `
+          <div style="display:flex;gap:6px;">
+            ${isAssignedContractor && (escrow.appeal_count || 0) < 1 ? `<button class="secondary-btn btn-sm" onclick="window.openAppealModal(${id})">Appeal Verdict</button>` : ''}
+            ${isCreatorOfTask ? `<button class="secondary-btn btn-sm" style="border-color:var(--warning);color:var(--warning);" onclick="window.claimRefund(${id}, this)">Claim Refund</button>` : ''}
+          </div>
+        `;
+      } else if (status === 'REFUNDABLE' && isCreatorOfTask) {
+        actionBtnHtml = `
+          <button class="action-btn btn-sm" style="background:var(--warning);color:#000;" onclick="window.claimRefund(${id}, this)">
+            Claim Vault Refund
+          </button>
+        `;
+      } else if (status === 'PAYOUT_CLAIMED' || status === 'REFUNDED') {
+        actionBtnHtml = `<button class="secondary-btn btn-sm" onclick="window.viewResolutionReport(${id})">View Audit Report</button>`;
       }
 
-      let depositBadgeSnippet = (escrow.payment_received || escrow.status === 'OPEN_FOR_CLAIM') ? `
-        <div style="margin-top:8px;padding:6px 10px;background:rgba(16, 185, 129, 0.08);border:1px solid rgba(16, 185, 129, 0.2);border-radius:6px;font-size:0.75rem;color:var(--success);">
-          Contract Payment Receipt: ${escrow.amount} GEN Received & Locked in Vault
-        </div>
-      ` : `
-        <div style="margin-top:8px;padding:6px 10px;background:rgba(245, 158, 11, 0.08);border:1px solid rgba(245, 158, 11, 0.25);border-radius:6px;font-size:0.75rem;color:var(--warning);">
-          Awaiting Contract Deposit Payment (${escrow.amount} GEN) to Publicize to Builders
+      let financialAccountingSnippet = `
+        <div style="margin-top:8px;padding:8px 12px;background:rgba(var(--primary-rgb), 0.06);border:1px solid rgba(var(--primary-rgb), 0.2);border-radius:6px;font-size:0.75rem;display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+          <div>Deposited: <strong style="color:var(--text-main);">${escrow.deposited_amount || escrow.amount || 0} GEN</strong></div>
+          <div>Remaining: <strong style="color:var(--success);">${escrow.remaining_amount !== undefined ? escrow.remaining_amount : escrow.amount} GEN</strong></div>
+          <div>Released: <strong style="color:var(--primary);">${escrow.released_amount || 0} GEN</strong></div>
+          <div>Refunded: <strong style="color:var(--warning);">${escrow.refunded_amount || 0} GEN</strong></div>
         </div>
       `;
 
-      let resolutionSnippet = '';
-      if (escrow.decision) {
-        resolutionSnippet = `
-          <div style="margin-top:10px;padding:10px;background:rgba(var(--primary-rgb), 0.08);border:1px solid rgba(var(--primary-rgb), 0.2);border-radius:6px;">
-            <div style="font-size:0.85rem;font-weight:700;">Verdict: ${escrow.decision} (Score: ${escrow.score}/100)</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">Verified by GenVM Validator Committee on Bradbury.</div>
-            ${escrow.payout_address ? `<div style="font-size:0.72rem;color:var(--primary);margin-top:4px;font-family:var(--font-mono);">Disbursed to: ${escrow.payout_address}</div>` : ''}
-          </div>
-        `;
-      }
+      let evidenceHashSnippet = escrow.evidence_hash ? `
+        <div style="font-size:0.7rem;font-family:var(--font-mono);color:var(--text-muted);margin-top:6px;">
+          Evidence Hash: ${escrow.evidence_hash.slice(0, 16)}...
+        </div>
+      ` : '';
 
       const contractorDisplay = isOpenForClaim 
         ? '<span style="color:var(--primary);font-weight:700;">Open for Claim</span>' 
         : (escrow.contractor && !escrow.contractor.startsWith('0x0000') ? `${escrow.contractor}` : 'Unassigned');
-
-      const clientDisplay = escrow.client ? escrow.client : 'Client';
 
       card.innerHTML = `
         <div>
           <div class="card-header">
             <div>
               <span class="escrow-id-badge">ESCROW BOUNTY #${id}</span>
-              ${escrow.category ? `<span style="margin-left:6px;font-size:0.7rem;color:var(--primary);">${escrow.category}</span>` : ''}
+              <span style="margin-left:6px;font-size:0.68rem;padding:2px 6px;border-radius:10px;background:rgba(16,185,129,0.15);color:var(--success);font-weight:700;">LIVE ON-CHAIN</span>
             </div>
-            <span class="status-badge ${isAwaitingDeposit ? 'pending' : (isOpenForClaim ? 'open_for_claim' : (escrow.status === 'ACCEPTED' ? 'approved' : statusClass))}">
-              ${isAwaitingDeposit ? 'AWAITING DEPOSIT' : (isOpenForClaim ? 'PUBLICIZED BOUNTY' : escrow.status.replace(/_/g, ' '))}
+            <span class="status-badge ${status.toLowerCase()}">
+              ${status.replace(/_/g, ' ')}
             </span>
           </div>
           <h3 class="card-title">${escrow.title}</h3>
@@ -1010,14 +940,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="meta-grid">
             <div class="meta-box">
               <span class="meta-label">Client (Creator)</span>
-              <span class="meta-val" style="font-weight:600;">${clientDisplay}</span>
+              <span class="meta-val" style="font-weight:600;">${escrow.client ? (escrow.client.slice(0,6)+'...'+escrow.client.slice(-4)) : 'Client'}</span>
             </div>
             <div class="meta-box">
               <span class="meta-label">Contractor (Builder)</span>
-              <span class="meta-val">${contractorDisplay}</span>
+              <span class="meta-val">${contractorDisplay.includes('0x') ? contractorDisplay.slice(0,6)+'...'+contractorDisplay.slice(-4) : contractorDisplay}</span>
             </div>
             <div class="meta-box">
-              <span class="meta-label">Escrow Vault</span>
+              <span class="meta-label">Escrow Vault Amount</span>
               <span class="meta-val" style="color:var(--primary);font-weight:700;">${escrow.amount} GEN</span>
             </div>
             <div class="meta-box">
@@ -1030,8 +960,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <div style="font-size:0.82rem;color:var(--text-main);margin-bottom:4px;"><strong>Requirements:</strong> ${escrow.requirements}</div>
             <div style="font-size:0.78rem;color:var(--text-muted);"><strong>AI Criteria:</strong> ${escrow.criteria}</div>
             ${escrow.deliverable_url ? `<div style="font-size:0.75rem;margin-top:6px;font-family:var(--font-mono);color:var(--primary);">Deliverable: ${escrow.deliverable_url}</div>` : ''}
-            ${depositBadgeSnippet}
-            ${resolutionSnippet}
+            ${financialAccountingSnippet}
+            ${evidenceHashSnippet}
           </div>
         </div>
         <div>
@@ -1063,8 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       await API.joinEscrow({
         escrow_id: escrowId,
-        role: 'contractor',
-        participant_address: state.connectedWallet || state.currentUsername || state.currentEmail || "Builder"
+        participant_address: state.connectedWallet || state.currentUsername || "0x1111111111111111111111111111111111111111"
       });
       showToast(`Successfully claimed Escrow Bounty #${escrowId}! Assigned as Contractor.`, 'success');
       loadEscrows();
@@ -1109,21 +1038,8 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'escrow-card';
 
       const id = m.market_id || m.id;
-      const totalPool = m.total_yes + m.total_no;
-      const yesPercent = totalPool > 0 ? ((m.total_yes / totalPool) * 100).toFixed(1) : 50;
-
-      let actionsHtml = '';
-      if (m.status === 'OPEN') {
-        actionsHtml = `
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-            <button class="secondary-btn" style="border-color:var(--success);" onclick="window.openStakeModal(${id}, 'YES')">Stake YES</button>
-            <button class="secondary-btn" style="border-color:var(--danger);" onclick="window.openStakeModal(${id}, 'NO')">Stake NO</button>
-          </div>
-          <button class="action-btn" style="width:100%;" onclick="window.resolveTruthForgeMarket(${id})">
-            Trigger GenLayer Oracle Resolution
-          </button>
-        `;
-      }
+      const totalPool = (m.total_yes || 0) + (m.total_no || 0);
+      const yesPercent = totalPool > 0 ? (((m.total_yes || 0) / totalPool) * 100).toFixed(1) : 50;
 
       card.innerHTML = `
         <div>
@@ -1131,13 +1047,12 @@ document.addEventListener('DOMContentLoaded', () => {
           <h3 class="card-title">${m.question}</h3>
           <p class="card-desc"><strong>Criteria:</strong> ${m.criteria}</p>
           <div style="font-size:0.85rem;margin-bottom:12px;">
-            <strong>Pool:</strong> YES ${yesPercent}% (${m.total_yes} GEN) | NO ${(100 - yesPercent).toFixed(1)}% (${m.total_no} GEN)
+            <strong>Pool:</strong> YES ${yesPercent}% (${m.total_yes || 0} GEN) | NO ${(100 - yesPercent).toFixed(1)}% (${m.total_no || 0} GEN)
           </div>
           <div style="font-size:0.72rem;font-family:var(--font-mono);color:var(--primary);margin-bottom:8px;">
             Deployed Oracle Contract: <a href="${ORACLE_STUDIO_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_ORACLE_CONTRACT.slice(0,6)}...${DEPLOYED_ORACLE_CONTRACT.slice(-4)}</a>
           </div>
         </div>
-        <div>${actionsHtml}</div>
       `;
       marketsContainer.appendChild(card);
     });
@@ -1160,13 +1075,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const openCreateMarketBtn = document.getElementById('open-create-market-btn');
-  if (openCreateMarketBtn) {
-    openCreateMarketBtn.addEventListener('click', () => {
-      document.getElementById('create-market-modal').classList.add('active');
-    });
-  }
-
   const assignmentSelect = document.getElementById('escrow-assignment-mode');
   const contractorWrapper = document.getElementById('contractor-input-wrapper');
   if (assignmentSelect && contractorWrapper) {
@@ -1175,7 +1083,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Create Escrow Form (Creates in unpaid state, opens Web3 Wallet Payment & Deposit Modal)
+  // Create Escrow Form
   const createEscrowForm = document.getElementById('create-escrow-form');
   if (createEscrowForm) {
     createEscrowForm.addEventListener('submit', async (e) => {
@@ -1187,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const amount = parseFloat(document.getElementById('escrow-amount').value) || 100;
-      const clientAddr = state.connectedWallet || state.currentUsername || state.currentEmail || "Client";
+      const clientAddr = state.connectedWallet || "0x1111111111111111111111111111111111111111";
 
       try {
         const res = await API.createEscrow({
@@ -1208,8 +1116,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.closeModals();
         loadEscrows();
 
-        // Immediately open the Web3 Wallet Payment & Deposit Modal
-        window.openDepositRequiredModal(res.escrow_id);
+        window.openDepositRequiredModal(res.escrow_id, amount);
       } catch (err) {
         if (btn) {
           btn.classList.remove('btn-loading');
@@ -1220,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // CONFIRM WEb3 WALLET PAYMENT & PUBLICIZE BOUNTY
+  // CONFIRM DEPOSIT PAYMENT & FUND ESCROW VAULT ON-CHAIN
   const confirmDepositSentBtn = document.getElementById('confirm-deposit-sent-btn');
   if (confirmDepositSentBtn) {
     confirmDepositSentBtn.addEventListener('click', async () => {
@@ -1229,74 +1136,24 @@ document.addEventListener('DOMContentLoaded', () => {
       confirmDepositSentBtn.classList.add('btn-loading');
       confirmDepositSentBtn.disabled = true;
 
-      try {
-        let txHash = '';
-        if (window.ethereum && state.connectedWallet) {
-          try {
-            showToast('Prompting Web3 wallet extension for deposit payment approval...', 'info');
-            const params = [{
-              from: state.connectedWallet,
-              to: DEPLOYED_ESCROW_CONTRACT,
-              value: '0x0'
-            }];
-            txHash = await window.ethereum.request({ method: 'eth_sendTransaction', params }).catch(() => null);
-          } catch (e) {}
-        }
+      const clientAddr = state.connectedWallet || "0x1111111111111111111111111111111111111111";
 
-        const res = await API.confirmEscrowDeposit(state.pendingDepositEscrowId, txHash);
+      try {
+        const res = await API.confirmEscrowDeposit(
+          state.pendingDepositEscrowId,
+          state.pendingDepositAmount || 100,
+          clientAddr
+        );
         confirmDepositSentBtn.classList.remove('btn-loading');
         confirmDepositSentBtn.disabled = false;
         window.closeModals();
 
-        showToast(`Payment Verified & Locked in Escrow Vault! Bounty #${state.pendingDepositEscrowId} is now PUBLICIZED to all Builders worldwide!`, 'success');
+        showToast(`Deposit Verified & Locked in Escrow Vault! Escrow #${state.pendingDepositEscrowId} is now active/open!`, 'success');
         loadEscrows();
       } catch (e) {
         confirmDepositSentBtn.classList.remove('btn-loading');
         confirmDepositSentBtn.disabled = false;
-        showToast('Payment verification error: ' + e.message, 'danger');
-      }
-    });
-  }
-
-  // Create Market Form
-  const createMarketForm = document.getElementById('create-market-form');
-  if (createMarketForm) {
-    createMarketForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = createMarketForm.querySelector('button[type="submit"]');
-      if (btn) {
-        btn.classList.add('btn-loading');
-        btn.disabled = true;
-      }
-
-      try {
-        const question = document.getElementById('market-question').value;
-        const category = document.getElementById('market-category').value;
-        const criteria = document.getElementById('market-criteria').value;
-        const sourcesText = document.getElementById('market-sources').value;
-        const sources = sourcesText ? sourcesText.split('\n').filter(s => s.trim().length > 0) : [];
-
-        const res = await API.createMarket({
-          creator: state.connectedWallet || state.currentUsername || state.currentEmail || "Predictor",
-          question: question,
-          category: category,
-          resolution_criteria: criteria,
-          resolution_sources: sources
-        });
-
-        if (btn) {
-          btn.classList.remove('btn-loading');
-          btn.disabled = false;
-        }
-        window.closeModals();
-        showToast(`Truth Market #${res.market_id} deployed on GenLayer Bradbury!`, 'success');
-        loadMarkets();
-      } catch (err) {
-        if (btn) {
-          btn.classList.remove('btn-loading');
-          btn.disabled = false;
-        }
-        showToast('Failed to create market: ' + err.message, 'danger');
+        showToast('Deposit error: ' + e.message, 'danger');
       }
     });
   }
@@ -1312,10 +1169,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = true;
       }
 
+      const contractorAddr = state.connectedWallet || "0x2222222222222222222222222222222222222222";
+
       try {
         await API.submitDeliverable({
           escrow_id: state.activePayoutEscrowId,
-          sender: state.connectedWallet || state.currentUsername || state.currentEmail || "Builder",
+          sender: contractorAddr,
           deliverable_url: document.getElementById('deliv-url').value,
           deliverable_notes: document.getElementById('deliv-notes').value
         });
@@ -1354,7 +1213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusText = document.getElementById('arbitration-status-text');
 
     if (steps[0]) steps[0].classList.add('active');
-    if (statusText) statusText.textContent = 'Selecting GenLayer Validator Committee (5 Nodes Staked)...';
+    if (statusText) statusText.textContent = 'Selecting GenLayer Validator Committee (5 Independent Nodes Staked)...';
 
     setTimeout(() => {
       if (steps[0]) { steps[0].classList.remove('active'); steps[0].classList.add('completed'); }
@@ -1365,13 +1224,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       if (steps[1]) { steps[1].classList.remove('active'); steps[1].classList.add('completed'); }
       if (steps[2]) steps[2].classList.add('active');
-      if (statusText) statusText.textContent = 'GenVM LLM evaluating criteria and scoring quality...';
+      if (statusText) statusText.textContent = 'GenVM LLM evaluating criteria & executing prompt-injection defense...';
     }, 2000);
 
     setTimeout(() => {
       if (steps[2]) { steps[2].classList.remove('active'); steps[2].classList.add('completed'); }
       if (steps[3]) steps[3].classList.add('active');
-      if (statusText) statusText.textContent = 'Verifying Equivalence Principle & aggregating signatures...';
+      if (statusText) statusText.textContent = 'Verifying Independent Equivalence Consensus across committee...';
     }, 3000);
 
     setTimeout(async () => {
@@ -1380,23 +1239,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (steps[3]) { steps[3].classList.remove('active'); steps[3].classList.add('completed'); }
         if (steps[4]) { steps[4].classList.add('active'); steps[4].classList.add('completed'); }
 
-        if (res.decision === 'ACCEPT') {
-          if (statusText) statusText.textContent = `Consensus Proven! Task Verified (Score: ${res.resolution ? res.resolution.score : 92}/100). Opening Payout Destination Address Prompt...`;
+        if (res.is_approved) {
+          if (statusText) statusText.textContent = `Consensus Proven! Task Verified. Unlocking Payout Destination Address Prompt...`;
           loadEscrows();
           setTimeout(() => {
             window.closeModals();
             window.promptPayoutAddressModal(escrowId);
           }, 1500);
         } else {
-          // REJECTED -> Reset to OPEN_FOR_CLAIM
-          const target = state.escrows.find(e => (e.escrow_id || e.id) == escrowId);
-          if (target) {
-            target.status = 'OPEN_FOR_CLAIM';
-            target.contractor = '0x0000000000000000000000000000000000000000';
-            target.deliverable_url = '';
-            target.deliverable_notes = '';
-          }
-          if (statusText) statusText.textContent = `Verification REJECTED. Task returned to Open Bounty Marketplace for other builders!`;
+          if (statusText) statusText.textContent = `Verification REJECTED. Milestone requirements or quality threshold not fulfilled.`;
           loadEscrows();
           setTimeout(() => {
             window.closeModals();
@@ -1445,8 +1296,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = true;
       }
 
+      const callerAddr = state.connectedWallet || "0x2222222222222222222222222222222222222222";
+
       try {
-        const res = await API.releasePayout(state.activePayoutEscrowId, destAddr);
+        const res = await API.releasePayout(state.activePayoutEscrowId, callerAddr, destAddr);
         if (btn) {
           btn.classList.remove('btn-loading');
           btn.disabled = false;
@@ -1479,81 +1332,13 @@ document.addEventListener('DOMContentLoaded', () => {
       <p style="font-size:0.9rem;margin-bottom:1rem;">
         GenVM Validator Committee on GenLayer Bradbury evaluated requirements and verified submission against specified criteria. Decision: <strong>${escrow.decision || 'ACCEPT'}</strong>.
       </p>
+      ${escrow.evidence_hash ? `<div style="font-size:0.75rem;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:1rem;"><strong>SHA-256 Evidence Hash:</strong> ${escrow.evidence_hash}</div>` : ''}
       ${escrow.payout_address ? `<div style="font-size:0.85rem;color:var(--success);margin-bottom:1rem;"><strong>Disbursed Payout Address:</strong> ${escrow.payout_address}</div>` : ''}
       <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--primary);">
         Deployed Escrow Contract: <a href="${ESCROW_STUDIO_URL}" target="_blank" style="color:var(--primary);text-decoration:underline;">${DEPLOYED_ESCROW_CONTRACT}</a>
       </div>
     `;
     document.getElementById('resolution-details-modal').classList.add('active');
-  };
-
-  // Staking Handlers
-  let activeMarketId = null;
-  let activeMarketSide = 'YES';
-
-  window.openStakeModal = (marketId, side) => {
-    activeMarketId = marketId;
-    activeMarketSide = side;
-    document.getElementById('stake-side-indicator').textContent = side;
-    document.getElementById('stake-modal').classList.add('active');
-  };
-
-  const stakeForm = document.getElementById('stake-form');
-  if (stakeForm) {
-    stakeForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('stake-submit-btn');
-      if (btn) {
-        btn.classList.add('btn-loading');
-        btn.disabled = true;
-      }
-
-      try {
-        await API.placeBet({
-          market_id: activeMarketId,
-          sender: state.connectedWallet || state.currentUsername || state.currentEmail || "Predictor",
-          side: activeMarketSide,
-          amount: parseFloat(document.getElementById('stake-amount').value)
-        });
-        if (btn) {
-          btn.classList.remove('btn-loading');
-          btn.disabled = false;
-        }
-        window.closeModals();
-        showToast(`Staked on ${activeMarketSide}!`, 'success');
-        loadMarkets();
-      } catch (err) {
-        if (btn) {
-          btn.classList.remove('btn-loading');
-          btn.disabled = false;
-        }
-        showToast('Staking error: ' + err.message, 'danger');
-      }
-    });
-  }
-
-  window.resolveTruthForgeMarket = async (marketId) => {
-    showToast('Executing multi-source web crawl & GenLayer validator consensus...', 'info');
-    try {
-      const res = await API.resolveMarket(marketId);
-      showToast(`Market #${marketId} autonomously resolved to ${res.outcome}!`, 'success');
-      loadMarkets();
-    } catch (err) {
-      showToast('Resolution error: ' + err.message, 'danger');
-    }
-  };
-
-  // ADMIN ACTION: Remove all created bounties from all users
-  window.adminClearAllBounties = async () => {
-    if (confirm("ADMIN ACTION: Are you sure you want to remove ALL created bounties from ALL users?")) {
-      try {
-        await API.clearAllBounties();
-        showToast("Admin Action: All created bounties removed successfully!", "success");
-        loadEscrows();
-      } catch (e) {
-        showToast("Error removing bounties: " + e.message, "danger");
-      }
-    }
   };
 
   // LIVE AUTO-REFRESH POLLING EVERY 1 SECOND (1000ms)

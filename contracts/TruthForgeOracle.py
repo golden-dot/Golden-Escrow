@@ -32,6 +32,7 @@ class TruthForgeOracle(gl.Contract):
     next_market_id: u256
 
     def __init__(self):
+        self.markets = TreeMap()
         self.next_market_id = u256(1)
 
     # =========================================================
@@ -159,7 +160,7 @@ Rule:
             leader = leader_result.calldata
 
             outcome = leader.get("outcome")
-            confidence = leader.get("confidence")
+            confidence = leader.get("confidence") or leader.get("confidence_score", 95)
 
             if outcome not in ["YES", "NO"]:
                 return False

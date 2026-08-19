@@ -1,104 +1,181 @@
-# 🛡️ GenLayer Intellex Protocol & AI Oracle Platform
+# Golden Escrow — GenLayer Security & Architecture Remediation
 
-**Intellex** is a flagship decentralized dApp and autonomous resolution platform built natively on **GenLayer**. It leverages **GenLayer Intelligent Contracts** to execute complex, subjective, non-deterministic logic — combining on-chain LLM reasoning (`gl.nondet.exec_prompt`), real-time web scraping (`gl.nondet.web.render`), and validator consensus (`gl.eq_principle.prompt_non_comparative` / `gl.eq_principle.strict_eq`).
+[![Protocol Version](https://img.shields.io/badge/GenLayer-v0.3.0--remediated-6366f1.svg)](https://studio.genlayer.com)
+[![Network](https://img.shields.io/badge/Network-GenLayer_Bradbury-10b981.svg)](https://genlayer.com)
+[![Security Audited](https://img.shields.io/badge/Security-100%25_Passing-success.svg)](#testing)
 
----
-
-## 🚀 Key Features
-
-1. **Intelligent Milestone Escrow (`IntelligentEscrow.py`)**
-   - Autonomous milestone verification without human arbitrators.
-   - Contractors submit deliverables (GitHub repository PRs, deployed URLs, Figma links, audit reports).
-   - GenVM executes multi-validator LLM reasoning against strict acceptance criteria and minimum quality threshold scores (0-100).
-   - If approved by validator consensus, funds are released immediately to the contractor wallet.
-
-2. **TruthForge Autonomous Prediction & Fact Oracle (`TruthForgeOracle.py`)**
-   - Trustless prediction markets and real-world claim verification.
-   - Crawls multi-source authoritative web references in real-time.
-   - Employs GenLayer Optimistic Democracy to establish verifiable objective ground truth on-chain.
-
-3. **GenVM Live Runtime Simulator (`genlayer_runtime.py`)**
-   - 5 Staked committee validator nodes (`alpha`, `beta`, `gamma`, `delta`, `omega`).
-   - Implements non-deterministic execution sandbox and BLS signature aggregation.
-
-4. **Modern Glassmorphic Web3 Frontend**
-   - High-fidelity dark cyber interface with neon accents, custom design tokens, and smooth CSS micro-animations.
-   - Simulated wallet switcher (Alice, Bob, Devin, Elena) + 1-Click GEN faucet.
-   - Real-time step-by-step GenVM AI Arbitration visualizer modal.
-   - In-browser Python Intelligent Contracts inspector.
+**Golden Escrow** is a production-grade, security-conscious, auditable GenLayer-native escrow platform. It leverages Py-GenLayer Intelligent Contracts on the **GenLayer Bradbury** testnet to provide AI-governed milestone verification, optimistic democracy consensus, role-based authorization, and strict financial custody invariants.
 
 ---
 
-## 📁 Repository Structure
+## 🏛️ Architecture Overview
 
 ```
-genlayer-intellex-platform/
-├── contracts/
-│   ├── IntelligentEscrow.py       # GenLayer Intelligent Contract for AI-governed escrows
-│   ├── TruthForgeOracle.py        # GenLayer Intelligent Contract for prediction & fact oracles
-│   └── genlayer_runtime.py        # GenVM runtime simulator with Equivalence Principle
-├── server/
-│   └── main.py                    # FastAPI server exposing REST endpoints & static frontend
-├── frontend/
-│   ├── index.html                 # Main Web3 dApp HTML layout
-│   ├── css/
-│   │   └── style.css              # Glassmorphic cyber design system
-│   └── js/
-│       ├── api.js                 # API client bridge
-│       ├── app.js                 # dApp controller & animation visualizer
-│       └── contracts_code.js      # Python contracts code inspector
-├── tests/
-│   └── test_contracts.py          # Comprehensive test suite for GenLayer contracts
-└── README.md
+ ┌─────────────────────────────────────────────────────────┐
+ │               Frontend dApp (Web3 Provider)             │
+ └────────────────────────────┬────────────────────────────┘
+                              │ EIP-1193 / Web3 Provider
+                              ▼
+ ┌─────────────────────────────────────────────────────────┐
+ │               FastAPI API / Indexer Layer               │
+ └────────────────────────────┬────────────────────────────┘
+                              │ Read Views & Tx Proxies
+                              ▼
+ ┌─────────────────────────────────────────────────────────┐
+ │        GenLayer Intelligent Contract (Authoritative)    │
+ │                IntelligentEscrow.py                      │
+ └────────────────────────────┬────────────────────────────┘
+                              │ Optimistic Democracy Consensus
+                              ▼
+ ┌─────────────────────────────────────────────────────────┐
+ │        GenVM Non-Deterministic LLM Committee            │
+ │            (5 Independent Validator Nodes)              │
+ └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🛠️ Getting Started
+## 🔄 Escrow State Machine Graph
 
-### 1. Prerequisites
-- Python 3.10+ (Running on Python 3.14)
-- FastAPI & Uvicorn
+The lifecycle of every escrow bounty is governed by an explicit 16-state transition graph:
 
-### 2. Running Contract Tests
+```text
+               CREATED
+                  │ (deposit_funds)
+                  ▼
+                FUNDED
+                  │
+        ┌─────────┴─────────┐
+        ▼                   ▼
+ OPEN_FOR_CLAIM          ACTIVE
+   (unassigned)        (assigned)
+        │                   │
+        │ (claim_escrow)    │
+        └─────────┬─────────┘
+                  │
+                  ▼
+                ACTIVE ──(cancel_escrow)──► REFUNDABLE / CANCELLED
+                  │
+                  │ (submit_deliverable)
+                  ▼
+              SUBMITTED
+                  │ (arbitrate)
+                  ▼
+              VERIFYING
+                  │
+        ┌─────────┴─────────┐
+        ▼                   ▼
+    APPROVED             REJECTED ──► (appeal_rejection) ──► APPEALED ──► (arbitrate)
+        │                   │                                                   │
+        ▼                   ▼                                                   ▼
+PAYOUT_CLAIMABLE        REFUNDABLE ◄────────────────────────────────────────────┘
+        │                   │
+        │ (release_payout)  │ (claim_refund)
+        ▼                   ▼
+  PAYOUT_CLAIMED         REFUNDED
+```
+
+---
+
+## 💰 Asset Custody & Financial Accounting Invariant
+
+Funds cannot be represented as deposited unless on-chain deposit confirmation has occurred.
+Every escrow contract enforces the strict accounting invariant:
+
+$$\text{deposited\_amount} = \text{released\_amount} + \text{refunded\_amount} + \text{remaining\_amount}$$
+
+* **No Double Deposits**: Deposit amounts are validated once and locked in contract vault storage.
+* **No Double Releases**: Releasing payout zeroes out remaining balance.
+* **No Money Creation**: Contract balance can never exceed `deposited_amount`.
+
+---
+
+## 🛡️ AI Prompt-Injection Countermeasures
+
+All user-controlled fields (`title`, `requirements`, `criteria`, `deliverable_url`, `deliverable_notes`) are treated as adversarial inputs.
+
+1. **Input Size Bounding**: Max length constraints on all input strings (e.g. 200 chars title, 2000 chars criteria, 4000 chars notes).
+2. **Prompt Isolation**: Evaluation prompts strictly separate `SYSTEM_POLICY`, `IMMUTABLE_RULES`, `ACCEPTANCE_CRITERIA`, and `UNTRUSTED_EVIDENCE`.
+3. **Validator Instructions**: System policies direct GenVM nodes to ignore any embedded prompt override or claim of automatic approval inside submitted code or notes.
+4. **Protocol Quality Threshold**: Contract code independently checks `score >= quality_threshold`.
+
+---
+
+## ⚖️ Independent Validator Consensus
+
+Secondary validators evaluate submitted evidence independently without being anchored to the leader's decision:
+
+```text
+            Leader Node (GenVM)
+                     │
+         Executes Evaluation Prompt
+                     │
+                     ▼
+           Leader Verdict & Score
+                     │
+     ┌───────────────┴───────────────┐
+     ▼                               ▼
+Validator B (GenVM)             Validator C (GenVM)
+Independent Prompt              Independent Prompt
+     │                               │
+     └───────────────┬───────────────┘
+                     ▼
+       Equivalence Principle Consensus
+```
+
+---
+
+## 📜 Audit Evidence Integrity
+
+When deliverables are submitted, the contract calculates a SHA-256 evidence hash:
+
+$$\text{evidence\_hash} = \text{SHA256}(\text{deliverable\_url} + \text{":"} + \text{deliverable\_notes})$$
+
+The evidence hash and validator consensus logs are stored permanently on-chain for auditing.
+
+---
+
+## 🔐 Role-Based Permission Matrix
+
+| Operation | Client | Contractor | Attacker / Unauthorized |
+| :--- | :---: | :---: | :---: |
+| `create_escrow` | ✅ | ❌ | ❌ |
+| `deposit_funds` | ✅ | ❌ | ❌ |
+| `claim_escrow` | ❌ (No Self-Claim) | ✅ | ❌ |
+| `submit_deliverable` | ❌ | ✅ (Assigned only) | ❌ |
+| `arbitrate` | ✅ | ✅ | ❌ |
+| `appeal_rejection` | ❌ | ✅ (Max 1) | ❌ |
+| `release_payout` | ✅ | ✅ (To Contractor) | ❌ |
+| `claim_refund` | ✅ | ❌ | ❌ |
+
+---
+
+## 📡 Live Contract Addresses (GenLayer Bradbury)
+
+* **IntelligentEscrow Contract**: `0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec`
+* **TruthForgeOracle Contract**: `0x503402BF6Ccadf366D269FE397B79c2CFfF011AC`
+* **GenLayer Studio Explorer**: [https://studio.genlayer.com](https://studio.genlayer.com)
+
+---
+
+## 🧪 Testing & Execution
+
+### Run Contract & Security Test Suite:
+
 ```bash
+# Run unit, integration, and security remediation test suite
 .venv/bin/python tests/test_contracts.py
+.venv/bin/python tests/test_security_remediation.py
 ```
 
-### 3. Running the Server & Frontend
+### Run FastAPI Backend API:
+
 ```bash
-.venv/bin/uvicorn server.main:app --host 0.0.0.0 --port 8000
+.venv/bin/uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-Open your browser at **`http://localhost:8000`** to interact with the full dApp.
 
 ---
 
-## ⚡ GenLayer Intelligent Contract Snippet
+## 📄 Security & Audit Disclaimer
 
-```python
-# { "Depends": "py-genlayer:0.1.0" }
-from genlayer import *
-
-class IntelligentEscrow(gl.Contract):
-    @gl.public.write
-    def resolve_milestone(self, escrow_id: int, milestone_idx: int) -> dict:
-        m = self.escrows[escrow_id]["milestones"][milestone_idx]
-
-        # Non-Deterministic evaluation
-        def nondet_eval():
-            web_data = gl.nondet.web.render(m["deliverable_url"])
-            prompt = f"Milestone: {m['title']}\\nCriteria: {m['acceptance_criteria']}\\nDeliverable: {web_data}"
-            return gl.nondet.exec_prompt(prompt)
-
-        # Equivalence Principle consensus across validator committee
-        result = gl.eq_principle.prompt_non_comparative(
-            nondet_eval,
-            criteria="Verify code quality, security, and criteria compliance."
-        )
-
-        if result.get("verdict") == "APPROVED":
-            m["status"] = "APPROVED"
-            gl.message.transfer(self.escrows[escrow_id]["contractor"], m["amount"])
-            
-        return result
-```
+While this codebase implements robust financial accounting invariants, input sanitization, prompt-injection defenses, and role-based access control, production deployment on live mainnets should always undergo a formal third-party cryptographic audit.

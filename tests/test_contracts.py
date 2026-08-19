@@ -7,7 +7,16 @@ import os
 # Add contract path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../contracts")))
 
-from IntelligentEscrow import IntelligentEscrow
+from genlayer import Address, u256, gl
+from IntelligentEscrow import (
+    IntelligentEscrow,
+    STATE_CREATED,
+    STATE_OPEN_FOR_CLAIM,
+    STATE_ACTIVE,
+    STATE_SUBMITTED,
+    STATE_PAYOUT_CLAIMABLE,
+    STATE_PAYOUT_CLAIMED
+)
 from TruthForgeOracle import TruthForgeOracle
 from genlayer_runtime import GenLayerRuntime
 
@@ -16,100 +25,95 @@ def test_intelligent_escrow_workflow():
     runtime = GenLayerRuntime()
     contract = IntelligentEscrow()
 
-    # 1. Create Escrow
-    client_addr = "0xAlice111111111111111111111111111111111111"
-    contractor_addr = "0xBob222222222222222222222222222222222222"
-    
-    milestones = [
-        {
-            "title": "Smart Contract Audit & Test Suite",
-            "description": "Perform comprehensive vulnerability audit and provide 90%+ test coverage.",
-            "amount": 250.0,
-            "acceptance_criteria": [
-                "No high or critical vulnerabilities in audit report",
-                "Full unit test suite passing",
-                "Automated CI configuration file included"
-            ],
-            "quality_threshold_score": 80
-        },
-        {
-            "title": "Production Deployment & Monitoring",
-            "description": "Deploy to GenLayer testnet and configure validator telemetry.",
-            "amount": 150.0,
-            "acceptance_criteria": [
-                "Contract verified on GenLayer Explorer",
-                "Telemetry endpoint responding with 200 OK"
-            ],
-            "quality_threshold_score": 80
-        }
-    ]
+    client_addr = Address("0x1111111111111111111111111111111111111111")
+    contractor_addr = Address("0x2222222222222222222222222222222222222222")
+    zero_addr = Address("0x0000000000000000000000000000000000000000")
 
+    # 1. Create Escrow as Client
+    gl.set_message_sender(client_addr)
     escrow_id = contract.create_escrow(
-        client=client_addr,
-        contractor=contractor_addr,
-        title="GenLayer Intelligent Oracles Suite",
-        description="Comprehensive decentralized milestone project with GenLayer AI arbitration.",
-        total_amount=400.0,
-        milestones=milestones
+        contractor=zero_addr,
+        title="Smart Contract Audit & Remediation Suite",
+        description="Comprehensive GenLayer security remediation and test suite creation.",
+        category="Security",
+        requirements="Audit contract state machine, authorization, and asset custody invariants.",
+        criteria="Zero critical vulnerabilities and full automated test suite passing.",
+        amount=u256(400),
+        quality_threshold=u256(80)
     )
-    assert escrow_id == 1
-    print(f"  ✓ Escrow #{escrow_id} successfully created with 2 milestones.")
+    assert escrow_id == u256(1)
+    escrow_data = contract.get_escrow(escrow_id)
+    assert escrow_data["status"] == STATE_CREATED
+    assert escrow_data["deposited_amount"] == u256(0)
+    print(f"  ✓ Escrow #{escrow_id} successfully created in CREATED state.")
 
-    # 2. Contractor submits deliverable for Milestone #0
-    sub_res = contract.submit_deliverable(
+    # 2. Client Deposits Funds to Vault
+    contract.deposit_funds(escrow_id, u256(400))
+    escrow_data = contract.get_escrow(escrow_id)
+    assert escrow_data["status"] == STATE_OPEN_FOR_CLAIM
+    assert escrow_data["deposited_amount"] == u256(400)
+    assert escrow_data["remaining_amount"] == u256(400)
+    print("  ✓ Escrow deposit confirmed on-chain. State transitioned to OPEN_FOR_CLAIM.")
+
+    # 3. Contractor Claims Bounty Task
+    gl.set_message_sender(contractor_addr)
+    contract.claim_escrow(escrow_id)
+    escrow_data = contract.get_escrow(escrow_id)
+    assert escrow_data["status"] == STATE_ACTIVE
+    assert escrow_data["contractor"] == contractor_addr
+    print("  ✓ Bounty claimed by contractor. State transitioned to ACTIVE.")
+
+    # 4. Contractor Submits Deliverable
+    contract.submit_deliverable(
         escrow_id=escrow_id,
-        milestone_index=0,
-        sender=contractor_addr,
-        deliverable_url="https://github.com/genlayer/audit-report-sample",
-        deliverable_notes="Completed the audit. Zero critical vulnerabilities found. 94% test coverage reached."
+        deliverable_url="https://github.com/golden-dot/Golden-Escrow",
+        deliverable_notes="Completed 16-phase security remediation with 100% test pass rate."
     )
-    assert sub_res["success"] is True
-    print("  ✓ Deliverable successfully submitted by contractor.")
+    escrow_data = contract.get_escrow(escrow_id)
+    assert escrow_data["status"] == STATE_SUBMITTED
+    assert len(escrow_data["evidence_hash"]) == 64
+    print("  ✓ Deliverable submitted with SHA-256 evidence hash. State transitioned to SUBMITTED.")
 
-    # 3. Trigger GenLayer Autonomous AI Verification
-    verif_res = contract.verify_and_resolve_milestone(
-        escrow_id=escrow_id,
-        milestone_index=0,
-        gl_runtime=runtime
-    )
-    assert verif_res["success"] is True
-    assert verif_res["is_approved"] is True
-    assert verif_res["payout_released"] == 250.0
-    print(f"  ✓ GenVM AI Resolution: {verif_res['resolution']['verdict']} with score {verif_res['resolution']['score']}/100")
-    print(f"  ✓ Funds released: {verif_res['payout_released']} GEN (Validators agreed: {verif_res['resolution']['validators_agreed']})")
+    # 5. AI Arbitration & Consensus Evaluation
+    new_status = contract.arbitrate(escrow_id)
+    escrow_data = contract.get_escrow(escrow_id)
+    assert new_status == STATE_PAYOUT_CLAIMABLE
+    assert escrow_data["decision"] == "ACCEPT"
+    assert escrow_data["score"] >= u256(80)
+    print(f"  ✓ GenVM AI Consensus Verdict: {escrow_data['decision']} with Score {escrow_data['score']}/100.")
 
-    # Check updated escrow state
-    escrow = contract.get_escrow(escrow_id)
-    assert escrow["milestones"][0]["status"] == "APPROVED"
-    assert escrow["total_payout_released"] == 250.0
-    print("  ✓ Escrow state verified.")
+    # 6. Release Payout to Contractor Address
+    contract.release_payout(escrow_id, contractor_addr)
+    escrow_data = contract.get_escrow(escrow_id)
+    assert escrow_data["status"] == STATE_PAYOUT_CLAIMED
+    assert escrow_data["released_amount"] == u256(400)
+    assert escrow_data["remaining_amount"] == u256(0)
+    # Verify Invariant: deposited = released + refunded + remaining
+    assert escrow_data["deposited_amount"] == escrow_data["released_amount"] + escrow_data["refunded_amount"] + escrow_data["remaining_amount"]
+    print("  ✓ Payout disburse confirmed. Accounting invariant verified: deposited = released + refunded + remaining.")
 
 def test_truth_forge_oracle():
     print("\n>>> Testing TruthForgeOracle Contract Workflow...")
-    runtime = GenLayerRuntime()
     oracle = TruthForgeOracle()
+    creator_addr = Address("0x3333333333333333333333333333333333333333")
 
+    gl.set_message_sender(creator_addr)
     market_id = oracle.create_market(
-        creator="0xCharlie333333333333333333333333333333333333",
         question="Will GenLayer Intelligent Contracts reach mainnet milestone in 2026?",
         category="Blockchain & AI",
-        resolution_sources=["https://genlayer.com/roadmap", "https://docs.genlayer.com"],
-        resolution_criteria="Affirmative if official release announcement published on genlayer.com.",
-        deadline_timestamp=1779999999
+        sources="https://genlayer.com/roadmap, https://docs.genlayer.com",
+        criteria="Affirmative if official release announcement published on genlayer.com."
     )
-    assert market_id == 1
+    assert market_id == u256(1)
     print(f"  ✓ TruthForge Market #{market_id} created.")
 
-    # Place bets
-    oracle.place_bet(market_id, "0xAlice1111", "YES", 50.0)
-    oracle.place_bet(market_id, "0xBob2222", "NO", 20.0)
+    oracle.place_stake(market_id, "YES", u256(50))
+    oracle.place_stake(market_id, "NO", u256(20))
     print("  ✓ Stakes placed: 50 GEN on YES, 20 GEN on NO.")
 
-    # Autonomous Resolution
-    res = oracle.resolve_market(market_id, gl_runtime=runtime)
-    assert res["success"] is True
-    assert res["outcome"] in ["YES", "NO"]
-    print(f"  ✓ Market #{market_id} autonomously resolved to: {res['outcome']} (Confidence: {res['resolution_details']['confidence_score']}%)")
+    outcome = oracle.resolve_market(market_id)
+    assert outcome in ["YES", "NO"]
+    print(f"  ✓ Market #{market_id} autonomously resolved to: {outcome}")
 
 if __name__ == "__main__":
     test_intelligent_escrow_workflow()
