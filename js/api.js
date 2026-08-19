@@ -116,11 +116,13 @@ class APIClient {
     return await fetchEscrowsData();
   }
 
-  // Create Escrow in AWAITING_DEPOSIT state (No limit on number of escrows created per client!)
+  // Create Escrow Bounty (Supports direct publicizing or draft mode)
   async createEscrow(data) {
     const escrows = await fetchEscrowsData();
     const maxId = escrows.reduce((max, e) => Math.max(max, parseInt(e.escrow_id || e.id || 0)), 0);
     const newId = maxId + 1;
+    const isPublic = data.payment_received || data.publicize_now;
+    
     const newEscrow = {
       escrow_id: newId,
       client: data.client || "Client",
@@ -134,10 +136,10 @@ class APIClient {
       quality_threshold: data.quality_threshold || 80,
       deliverable_url: "",
       deliverable_notes: "",
-      status: "AWAITING_DEPOSIT",
+      status: isPublic ? "OPEN_FOR_CLAIM" : "AWAITING_DEPOSIT",
       decision: "",
       score: 0,
-      payment_received: false,
+      payment_received: !!isPublic,
       payout_address: "",
       createdAt: new Date().toISOString()
     };
@@ -146,7 +148,7 @@ class APIClient {
     return { success: true, escrow_id: newId, escrow: newEscrow };
   }
 
-  // Confirm Deposit Payment & Publicize Bounty to All Builders Worldwide
+  // Confirm Deposit Payment & Publicize Single Bounty to All Builders Worldwide
   async confirmEscrowDeposit(escrowId) {
     const escrows = await fetchEscrowsData();
     const target = escrows.find(e => (e.escrow_id || e.id) == escrowId);
@@ -158,6 +160,30 @@ class APIClient {
       return { success: true, message: `Payment verified! Escrow Bounty #${escrowId} is now publicized to all Builders.`, escrow: target };
     }
     throw new Error(`Escrow Bounty #${escrowId} not found`);
+  }
+
+  // Publicize ALL unpublicized created bounties for a given client
+  async publicizeAllClientBounties(clientIdentifier) {
+    const escrows = await fetchEscrowsData();
+    const targetClient = (clientIdentifier || '').toLowerCase();
+    let count = 0;
+
+    escrows.forEach(e => {
+      const cLower = (e.client || '').toLowerCase();
+      if (cLower === targetClient || cLower.includes(targetClient) || targetClient.includes(cLower)) {
+        if (!e.payment_received || e.status === 'AWAITING_DEPOSIT') {
+          e.payment_received = true;
+          e.status = 'OPEN_FOR_CLAIM';
+          e.contractor = '0x0000000000000000000000000000000000000000';
+          count++;
+        }
+      }
+    });
+
+    if (count > 0) {
+      await syncEscrowsData(escrows);
+    }
+    return { success: true, count: count, escrows: escrows };
   }
 
   async deleteEscrow(escrowId) {

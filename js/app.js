@@ -505,6 +505,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Publicize all unpublicized bounties for current client
+  window.publicizeAllMyBounties = async (btnElement) => {
+    const user = state.currentUsername || state.currentEmail || 'Client';
+    if (btnElement) {
+      btnElement.classList.add('btn-loading');
+      btnElement.disabled = true;
+    }
+    try {
+      const res = await API.publicizeAllClientBounties(user);
+      if (btnElement) {
+        btnElement.classList.remove('btn-loading');
+        btnElement.disabled = false;
+      }
+      showToast(`Publicized ${res.count} created bounties to Builders worldwide!`, 'success');
+      loadEscrows();
+    } catch (e) {
+      if (btnElement) {
+        btnElement.classList.remove('btn-loading');
+        btnElement.disabled = false;
+      }
+      showToast('Error publicizing bounties: ' + e.message, 'danger');
+    }
+  };
+
   // Open Deposit Required Modal for unpaid task
   window.openDepositRequiredModal = (escrowId) => {
     const escrow = state.escrows.find(e => (e.escrow_id || e.id) == escrowId);
@@ -547,6 +571,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elMy) elMy.textContent = countMy;
     if (elCompleted) elCompleted.textContent = countCompleted;
 
+    // Check if Client has any unpublicized created bounties
+    const unpublicizedCreatedBounties = state.escrows.filter(e => {
+      const cLower = (e.client || '').toLowerCase();
+      const isOwner = (cLower === currentUser || cLower === currentEmail);
+      return isOwner && (!e.payment_received || e.status === 'AWAITING_DEPOSIT');
+    });
+
+    if (isClient && unpublicizedCreatedBounties.length > 0) {
+      const banner = document.createElement('div');
+      banner.style.cssText = "grid-column:1/-1;margin-bottom:1rem;padding:12px 16px;background:rgba(245, 158, 11, 0.1);border:1px solid rgba(245, 158, 11, 0.3);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;";
+      banner.innerHTML = `
+        <div style="font-size:0.88rem;color:var(--text-main);">
+          You have <strong style="color:var(--warning);">${unpublicizedCreatedBounties.length}</strong> created bounty draft(s) awaiting deposit to publicize.
+        </div>
+        <button class="action-btn btn-sm" onclick="window.publicizeAllMyBounties(this)">
+          Publicize All My Created Bounties Now
+        </button>
+      `;
+      escrowsContainer.appendChild(banner);
+    }
+
     let filtered = state.escrows.filter(escrow => {
       const matchesSearch = !state.searchQuery || 
         escrow.title.toLowerCase().includes(state.searchQuery) ||
@@ -577,7 +622,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     });
 
-    if (filtered.length === 0) {
+    if (filtered.length === 0 && unpublicizedCreatedBounties.length === 0) {
       escrowsContainer.innerHTML = `
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
           <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrow bounties found</div>
@@ -604,9 +649,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isAwaitingDeposit) {
         if (isCreatorOfTask) {
           actionBtnHtml = `
-            <div style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <button class="action-btn btn-sm" style="background:var(--warning);color:#000;" onclick="window.openDepositRequiredModal(${id})">
-                Deposit ${escrow.amount} GEN to Publicize
+                Deposit &amp; Publicize
               </button>
               <button class="secondary-btn btn-sm" style="border-color:var(--danger);color:var(--danger);" onclick="window.deleteEscrowTask(${id})">Delete</button>
             </div>
@@ -867,7 +912,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Create Escrow Form (Creates AWAITING_DEPOSIT draft and opens deposit payment prompt)
+  // Create Escrow Form
   const createEscrowForm = document.getElementById('create-escrow-form');
   if (createEscrowForm) {
     createEscrowForm.addEventListener('submit', async (e) => {
