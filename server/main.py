@@ -1,6 +1,7 @@
 """
 main.py - FastAPI Application Server for GenLayer Intellex Protocol
 Connects Frontend dApp with GenLayer Intelligent Contracts & GenVM Runtime.
+Network: GenLayer Bradbury
 """
 import os
 import sys
@@ -20,7 +21,7 @@ from genlayer_runtime import GenLayerRuntime
 
 app = FastAPI(
     title="GenLayer Intellex Protocol API",
-    description="Autonomous AI-Governed Escrow & Truth Oracle Platform on GenLayer",
+    description="Autonomous AI-Governed Escrow & Truth Oracle Platform on GenLayer Bradbury",
     version="1.0.0"
 )
 
@@ -33,58 +34,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Live Deployed Contract Addresses on GenLayer StudioNet
+# Live Deployed Contract Addresses on GenLayer Bradbury
 DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec"
 DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC"
 
-# Initialize GenLayer Runtime & Intelligent Contracts
+# Initialize GenLayer Runtime & Intelligent Contracts (Clean State)
 runtime = GenLayerRuntime()
 escrow_contract = IntelligentEscrow()
 oracle_contract = TruthForgeOracle()
-
-def seed_demo_data():
-    # Escrow 1: DEX Router Audit
-    escrow_contract.create_escrow(
-        contractor="0xBob791C2DeB8b7F498616142718E84e50882e308",
-        title="GenLayer DEX Router Intelligent Contract Audit",
-        description="Comprehensive security assessment, GenVM non-deterministic invariant testing, and mathematical formal verification.",
-        category="Smart Contract Security",
-        requirements="Develop automated fuzz tests for non-deterministic web and prompt handlers.",
-        criteria="Zero reentrancy or state mismatch during validator equivalence. Fuzz suite covers > 10,000 synthetic transaction edge-cases.",
-        amount=1200,
-        quality_threshold=85
-    )
-
-    # Escrow 2: Open Bounty
-    escrow_contract.create_escrow(
-        contractor="0x0000000000000000000000000000000000000000",
-        title="GenLayer Python SDK Async WebSocket Listener Bounty",
-        description="Open Community Bounty: Build high-throughput async WebSocket event subscription wrapper for GenLayer nodes with automatic reconnects.",
-        category="SDK & Developer Tooling",
-        requirements="Deliver modular Python package with 90%+ pytest coverage and typing annotations.",
-        criteria="Fully async using asyncio and websockets. Pytest suite passing with 90%+ code coverage.",
-        amount=950,
-        quality_threshold=85
-    )
-
-    # Submit deliverable for Escrow 1
-    escrow_contract.submit_deliverable(
-        escrow_id=1,
-        deliverable_url="https://github.com/genlayer/audit-router-deliverable",
-        deliverable_notes="Completed invariant fuzz testing suite. 15,000 iterations executed with zero equivalence breaks."
-    )
-
-    # Seed Oracle Markets
-    oracle_contract.create_market(
-        question="Will the official GenLayer Testnet v2 launch before Q4 2026?",
-        category="Protocol Upgrades",
-        sources="https://genlayer.com,https://docs.genlayer.com/releases",
-        criteria="Resolves YES if GenLayer core team announces public testnet v2 on official channels."
-    )
-    oracle_contract.place_stake(1, "YES", 120)
-    oracle_contract.place_stake(1, "NO", 45)
-
-seed_demo_data()
 
 # -------------------------------------------------------------
 # REST Endpoints
@@ -92,7 +49,7 @@ seed_demo_data()
 @app.get("/api/status")
 def get_node_status():
     return {
-        "network": "GenLayer StudioNet",
+        "network": "GenLayer Bradbury",
         "protocol_version": "v0.2.16",
         "deployed_escrow_contract": DEPLOYED_ESCROW_CONTRACT,
         "deployed_oracle_contract": DEPLOYED_ORACLE_CONTRACT,

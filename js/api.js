@@ -6,95 +6,10 @@
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
 
-// In-Memory Local Datastore for static Vercel deployment
+// In-Memory Local Datastore - Empty Fresh Start
 const localStore = {
-  escrows: [
-    {
-      escrow_id: 1,
-      client: "0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33",
-      contractor: "0xBob791C2DeB8b7F498616142718E84e50882e308",
-      title: "GenLayer DEX Router Intelligent Contract Audit",
-      description: "Comprehensive security assessment, GenVM non-deterministic invariant testing, and mathematical formal verification.",
-      category: "Smart Contract Security",
-      requirements: "Develop automated fuzz tests for non-deterministic web and prompt handlers.",
-      criteria: "Zero reentrancy or state mismatch during validator equivalence. Fuzz suite covers > 10,000 synthetic transaction edge-cases.",
-      amount: 1200,
-      quality_threshold: 85,
-      deliverable_url: "https://github.com/genlayer/audit-router-deliverable",
-      deliverable_notes: "Completed invariant fuzz testing suite. 15,000 iterations executed with zero equivalence breaks.",
-      status: "SUBMITTED",
-      decision: "",
-      score: 0,
-      payment_received: true,
-      payout_address: ""
-    },
-    {
-      escrow_id: 2,
-      client: "0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33",
-      contractor: "0x0000000000000000000000000000000000000000",
-      title: "GenLayer Python SDK Async WebSocket Listener Bounty",
-      description: "Open Community Bounty: Build high-throughput async WebSocket event subscription wrapper for GenLayer nodes with automatic reconnects.",
-      category: "SDK & Developer Tooling",
-      requirements: "Deliver modular Python package with 90%+ pytest coverage and typing annotations.",
-      criteria: "Fully async using asyncio and websockets. Pytest suite passing with 90%+ code coverage.",
-      amount: 950,
-      quality_threshold: 85,
-      deliverable_url: "",
-      deliverable_notes: "",
-      status: "OPEN_FOR_CLAIM",
-      decision: "",
-      score: 0,
-      payment_received: true,
-      payout_address: ""
-    },
-    {
-      escrow_id: 3,
-      client: "0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33",
-      contractor: "0xDevin22FA091c01e9DbA92b8F78241e57c15291244f",
-      title: "GenLayer Studio Visual Redesign & Design Tokens",
-      description: "High-converting dark glassmorphic interface, SVG animations, and design token library.",
-      category: "Design & UI/UX",
-      requirements: "Deliver design tokens (colors, typography, micro-animations) and high-fidelity prototype in Figma.",
-      criteria: "Figma file includes Dark and Cyber themes. Responsive layout grids for Mobile, Tablet, and Desktop.",
-      amount: 800,
-      quality_threshold: 80,
-      deliverable_url: "",
-      deliverable_notes: "",
-      status: "ACTIVE",
-      decision: "",
-      score: 0,
-      payment_received: true,
-      payout_address: ""
-    }
-  ],
-  markets: [
-    {
-      market_id: 1,
-      creator: "0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33",
-      question: "Will the official GenLayer Testnet v2 launch before Q4 2026?",
-      category: "Protocol Upgrades",
-      sources: "https://genlayer.com,https://docs.genlayer.com/releases",
-      criteria: "Resolves YES if GenLayer core team announces public testnet v2 on official channels.",
-      total_yes: 120,
-      total_no: 45,
-      status: "OPEN",
-      outcome: "",
-      confidence: 0
-    },
-    {
-      market_id: 2,
-      creator: "0xDevin22FA091c01e9DbA92b8F78241e57c15291244f",
-      question: "Did SpaceX Starship achieve successful payload deployment in the latest orbital test?",
-      category: "Aerospace & Tech",
-      sources: "https://spacex.com/launches,https://nasaspaceflight.com",
-      criteria: "Resolves YES if official telemetry confirms orbital insertion and payload release.",
-      total_yes: 300,
-      total_no: 50,
-      status: "OPEN",
-      outcome: "",
-      confidence: 0
-    }
-  ]
+  escrows: [],
+  markets: []
 };
 
 class APIClient {
@@ -112,7 +27,7 @@ class APIClient {
       // Fallback
     }
     return {
-      network: "GenLayer StudioNet",
+      network: "GenLayer Bradbury",
       protocol_version: "v0.2.16",
       deployed_escrow_contract: DEPLOYED_ESCROW_CONTRACT,
       deployed_oracle_contract: DEPLOYED_ORACLE_CONTRACT,
@@ -151,7 +66,7 @@ class APIClient {
     const newId = localStore.escrows.length + 1;
     const newEscrow = {
       escrow_id: newId,
-      client: data.client || "0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33",
+      client: data.client || "0xUserClientAddress",
       contractor: data.contractor || "0x0000000000000000000000000000000000000000",
       title: data.title,
       description: data.description,
@@ -187,7 +102,7 @@ class APIClient {
     }
     const target = localStore.escrows.find(e => e.escrow_id === data.escrow_id);
     if (target) {
-      target.contractor = data.participant_address;
+      target.contractor = data.participant_address || "0xContractorBuilderAddress";
       target.status = "ACTIVE";
     }
     return { success: true, message: "Claimed bounty as contractor" };
@@ -242,7 +157,7 @@ class APIClient {
       resolution: {
         verdict: "APPROVED",
         score: 92,
-        summary_reasoning: "GenVM Validator Committee evaluated requirements and verified 92/100 quality threshold.",
+        summary_reasoning: "GenVM Validator Committee on GenLayer Bradbury evaluated requirements and verified quality threshold.",
         validators_agreed: 5,
         total_validators: 5
       }
@@ -290,7 +205,7 @@ class APIClient {
     const newId = localStore.markets.length + 1;
     const newMarket = {
       market_id: newId,
-      creator: data.creator || "0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33",
+      creator: data.creator || "0xUserCreatorAddress",
       question: data.question,
       category: data.category,
       sources: data.resolution_sources ? data.resolution_sources.join(',') : '',

@@ -1,6 +1,7 @@
 /**
  * app.js - Main Application Controller for GenLayer Intellex Protocol
  * Full Multi-Screen Flow: Login Page -> Role Selection Page -> Main Platform Dashboard
+ * Network: GenLayer Bradbury
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -34,13 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // App State
+  // App State - Fresh Start
   const state = {
     currentScreen: 'login',
     currentRole: localStorage.getItem('intellex_role') || 'client',
-    currentUsername: localStorage.getItem('intellex_username') || 'Alice',
-    currentWallet: localStorage.getItem('intellex_wallet') || '0xAlice94A17B809F3d445492F6F16c14C2361B1cA29A33',
-    balance: 5000.0,
+    currentUsername: localStorage.getItem('intellex_username') || '',
+    currentWallet: localStorage.getItem('intellex_wallet') || '',
     escrows: [],
     markets: [],
     activeTab: 'escrows',
@@ -110,8 +110,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (loginForm) {
     loginForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const identifier = document.getElementById('login-identifier').value.trim() || 'alice@genlayer.io';
+      const identifier = document.getElementById('login-identifier').value.trim();
       
+      if (!identifier) {
+        showToast('Please enter your email or username', 'danger');
+        return;
+      }
+
       if (loginSubmitBtn) {
         loginSubmitBtn.classList.add('btn-loading');
         loginSubmitBtn.disabled = true;
@@ -140,6 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const fullName = document.getElementById('signup-fullname').value.trim();
       const email = document.getElementById('signup-email').value.trim();
+
+      if (!email) {
+        showToast('Please enter a valid email address', 'danger');
+        return;
+      }
 
       if (signupSubmitBtn) {
         signupSubmitBtn.classList.add('btn-loading');
@@ -183,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         localStorage.setItem('intellex_role', state.currentRole);
         localStorage.setItem('intellex_username', state.currentUsername);
-        localStorage.setItem('intellex_wallet', state.currentWallet);
 
         updateRoleUI();
         showScreen('dashboard');
@@ -195,31 +204,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // SCREEN 3: DASHBOARD ROLE & NAVIGATION UI
   function updateRoleUI() {
+    const username = state.currentUsername || 'User';
+
     const roleProfiles = {
       builder: {
         title: 'BUILDER',
-        welcome: `Welcome, ${state.currentUsername} (Builder & Contractor)`,
+        welcome: `Welcome, ${username} (Builder & Contractor)`,
         desc: 'Browse open community bounties, claim milestone tasks, submit deliverable URLs, verify work via GenVM AI, and enter your destination payout address to receive disbursements.',
         primaryAction: 'Browse Open Tasks to Claim',
         primaryActionTab: 'open-bounties'
       },
       client: {
         title: 'CLIENT',
-        welcome: `Welcome, ${state.currentUsername} (Client & Buyer)`,
+        welcome: `Welcome, ${username} (Client & Buyer)`,
         desc: 'Deploy AI-governed milestone escrows, deposit project funds into the contract, and receive automated payment receipt confirmations locked until AI task verification completes.',
         primaryAction: '+ Deploy New Escrow Vault',
         primaryActionTab: 'create-escrow'
       },
       dao: {
         title: 'DAO ARBITER',
-        welcome: `Welcome, ${state.currentUsername} (DAO Governance Arbiter)`,
+        welcome: `Welcome, ${username} (DAO Governance Arbiter)`,
         desc: 'Stake GEN tokens in committee validator pools, monitor equivalence execution, and govern protocol dispute reserves.',
         primaryAction: 'View Intelligent Contracts',
         primaryActionTab: 'contracts'
       },
       predictor: {
         title: 'PREDICTOR',
-        welcome: `Welcome, ${state.currentUsername} (Truth Market Predictor)`,
+        welcome: `Welcome, ${username} (Truth Market Predictor)`,
         desc: 'Trade and stake on real-world factual claims verified by automated multi-source web crawlers and GenLayer consensus.',
         primaryAction: 'Explore Truth Markets',
         primaryActionTab: 'oracle'
@@ -234,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const welcomeDesc = document.getElementById('role-welcome-desc');
     const primaryActionBtn = document.getElementById('role-primary-action-btn');
 
-    if (navName) navName.textContent = state.currentUsername;
+    if (navName) navName.textContent = username;
     if (navRole) navRole.textContent = profile.title;
     if (welcomeTitle) welcomeTitle.textContent = profile.welcome;
     if (welcomeDesc) welcomeDesc.textContent = profile.desc;
@@ -276,17 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
       state.activeTab = target;
     });
   });
-
-  // Faucet Button
-  const faucetBtn = document.getElementById('faucet-btn');
-  const walletBalanceDisplay = document.getElementById('wallet-balance');
-  if (faucetBtn) {
-    faucetBtn.addEventListener('click', () => {
-      state.balance += 500.0;
-      if (walletBalanceDisplay) walletBalanceDisplay.textContent = `${state.balance.toLocaleString()} GEN`;
-      showToast('Airdropped +500.0 GEN from GenLayer Faucet!', 'success');
-    });
-  }
 
   // Load Status Telemetry
   async function loadNodeStatus() {
@@ -384,8 +384,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filtered.length === 0) {
       escrowsContainer.innerHTML = `
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
-          <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No matching tasks found</div>
-          <div>Try adjusting your search query or switching active filters.</div>
+          <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrows found</div>
+          <div>Click "+ Deploy New Escrow" to create the first Intelligent Escrow on GenLayer Bradbury!</div>
         </div>
       `;
       return;
@@ -435,7 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resolutionSnippet = `
           <div style="margin-top:10px;padding:10px;background:rgba(var(--primary-rgb), 0.08);border:1px solid rgba(var(--primary-rgb), 0.2);border-radius:6px;">
             <div style="font-size:0.85rem;font-weight:700;">Verdict: ${escrow.decision} (Score: ${escrow.score}/100)</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">Verified by GenVM Validator Committee (5/5 Agreed).</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">Verified by GenVM Validator Committee on Bradbury.</div>
             ${escrow.payout_address ? `<div style="font-size:0.72rem;color:var(--primary);margin-top:4px;font-family:var(--font-mono);">Disbursed to: ${escrow.payout_address}</div>` : ''}
           </div>
         `;
@@ -445,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? '<span style="color:var(--primary);font-weight:700;">Open for Claim</span>' 
         : (escrow.contractor ? `${escrow.contractor.slice(0, 8)}...${escrow.contractor.slice(-6)}` : 'Unassigned');
 
-      const clientDisplay = escrow.client ? `${escrow.client.slice(0, 8)}...${escrow.client.slice(-6)}` : '0xAlice94A1...';
+      const clientDisplay = escrow.client ? `${escrow.client.slice(0, 8)}...${escrow.client.slice(-6)}` : 'Client';
 
       card.innerHTML = `
         <div>
@@ -506,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await API.joinEscrow({
         escrow_id: escrowId,
         role: 'contractor',
-        participant_address: state.currentWallet
+        participant_address: state.currentWallet || "0xBuilderAddress"
       });
       showToast(`Successfully claimed Escrow #${escrowId}! Assigned as Contractor.`, 'success');
       loadEscrows();
@@ -535,6 +535,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderMarkets() {
     if (!marketsContainer) return;
     marketsContainer.innerHTML = '';
+
+    if (state.markets.length === 0) {
+      marketsContainer.innerHTML = `
+        <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
+          <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active truth markets</div>
+          <div>Click "+ Create Truth Market" to deploy a fact verification market on GenLayer Bradbury!</div>
+        </div>
+      `;
+      return;
+    }
 
     state.markets.forEach((m) => {
       const card = document.createElement('div');
@@ -613,11 +623,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.disabled = true;
       }
 
-      const amount = parseFloat(document.getElementById('escrow-amount').value);
+      const amount = parseFloat(document.getElementById('escrow-amount').value) || 100;
 
       try {
         const res = await API.createEscrow({
-          client: state.currentWallet,
+          client: state.currentWallet || "0xClientWallet",
           contractor: assignmentSelect && assignmentSelect.value === 'assigned' ? document.getElementById('escrow-contractor').value : '0x0000000000000000000000000000000000000000',
           title: document.getElementById('escrow-title').value,
           description: document.getElementById('escrow-desc').value,
@@ -658,7 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await API.submitDeliverable({
           escrow_id: activeEscrowId,
-          sender: state.currentWallet,
+          sender: state.currentWallet || "0xContractorWallet",
           deliverable_url: document.getElementById('deliv-url').value,
           deliverable_notes: document.getElementById('deliv-notes').value
         });
@@ -799,7 +809,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </span>
       </div>
       <p style="font-size:0.9rem;margin-bottom:1rem;">
-        GenVM Validator Committee evaluated requirements and verified submission against specified criteria. Decision: <strong>${escrow.decision || 'ACCEPT'}</strong>.
+        GenVM Validator Committee on GenLayer Bradbury evaluated requirements and verified submission against specified criteria. Decision: <strong>${escrow.decision || 'ACCEPT'}</strong>.
       </p>
       ${escrow.payout_address ? `<div style="font-size:0.85rem;color:var(--success);margin-bottom:1rem;"><strong>Disbursed Payout Address:</strong> ${escrow.payout_address}</div>` : ''}
       <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--primary);">

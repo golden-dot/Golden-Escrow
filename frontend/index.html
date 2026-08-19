@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GenLayer Intellex Protocol | Autonomous AI Escrow & Truth Oracle</title>
-  <meta name="description" content="Decentralized Intelligent Escrow and Multi-Source Truth Oracle powered by GenLayer GenVM and Optimistic Democracy.">
+  <meta name="description" content="Decentralized Intelligent Escrow and Multi-Source Truth Oracle powered by GenLayer GenVM and Optimistic Democracy on GenLayer Bradbury Network.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <!-- SCREEN 1: DEDICATED INITIAL LOGIN & SIGN UP PAGE -->
+  <!-- SCREEN 1: INITIAL LOGIN & SIGN UP PAGE (CLEAN / NO PRE-FILLED DEMO ACCOUNTS) -->
   <div class="app-screen active" id="login-screen">
     <div class="auth-container">
       <div class="auth-card">
@@ -23,11 +23,11 @@
           </div>
           <div class="brand-text">
             <h1>INTELLEX</h1>
-            <span>GenLayer Protocol</span>
+            <span>GenLayer Bradbury</span>
           </div>
         </div>
 
-        <!-- Auth Navigation Tabs (Sign In / Sign Up) -->
+        <!-- Auth Navigation Tabs -->
         <div class="auth-tabs">
           <button class="auth-tab-btn active" id="auth-tab-login" onclick="window.switchAuthTab('login')">Log In</button>
           <button class="auth-tab-btn" id="auth-tab-signup" onclick="window.switchAuthTab('signup')">Create Account</button>
@@ -37,12 +37,12 @@
         <form id="auth-login-form">
           <div class="form-group">
             <label class="form-label">Email or Username</label>
-            <input type="text" class="form-control" id="login-identifier" value="alice@genlayer.io" placeholder="name@domain.com" required>
+            <input type="text" class="form-control" id="login-identifier" placeholder="Enter your email or username" required>
           </div>
 
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" class="form-control" id="login-password" value="••••••••••••" required>
+            <input type="password" class="form-control" id="login-password" placeholder="Enter your password" required>
           </div>
 
           <button type="submit" class="action-btn" id="login-submit-btn" style="width:100%;margin-top:1.25rem;padding:12px;font-size:0.95rem;">
@@ -54,17 +54,17 @@
         <form id="auth-signup-form" style="display:none;">
           <div class="form-group">
             <label class="form-label">Full Name</label>
-            <input type="text" class="form-control" id="signup-fullname" placeholder="e.g. Alice Smith" required>
+            <input type="text" class="form-control" id="signup-fullname" placeholder="Enter your full name" required>
           </div>
 
           <div class="form-group">
             <label class="form-label">Email Address</label>
-            <input type="email" class="form-control" id="signup-email" placeholder="alice@company.com" required>
+            <input type="email" class="form-control" id="signup-email" placeholder="name@domain.com" required>
           </div>
 
           <div class="form-group">
             <label class="form-label">Choose Password</label>
-            <input type="password" class="form-control" id="signup-password" placeholder="Create a strong password" required>
+            <input type="password" class="form-control" id="signup-password" placeholder="Create a password" required>
           </div>
 
           <button type="submit" class="action-btn" id="signup-submit-btn" style="width:100%;margin-top:1.25rem;padding:12px;font-size:0.95rem;">
@@ -73,7 +73,7 @@
         </form>
 
         <div style="margin-top:1.5rem;text-align:center;font-size:0.8rem;color:var(--text-dim);">
-          Demo Account pre-filled. Switch tabs to Log In or Create Account.
+          Enter your credentials to Log In or Create a New Account.
         </div>
       </div>
     </div>
@@ -135,7 +135,7 @@
         </div>
         <div class="brand-text">
           <h1>INTELLEX</h1>
-          <span>GenLayer Protocol</span>
+          <span>GenLayer Bradbury</span>
         </div>
       </a>
 
@@ -152,11 +152,11 @@
         </button>
       </nav>
 
-      <!-- Network, Theme Toggle, Profile Badge -->
+      <!-- Network, Theme Toggle, Profile Badge (Faucet Removed) -->
       <div class="nav-wallet">
         <div class="user-profile-badge" id="switch-role-nav-btn" title="Click to Switch Active Role">
           <div>
-            <div id="nav-user-name" style="font-size:0.82rem;font-weight:700;line-height:1.2;">Alice</div>
+            <div id="nav-user-name" style="font-size:0.82rem;font-weight:700;line-height:1.2;">User</div>
             <div class="role-pill" id="nav-user-role">CLIENT</div>
           </div>
         </div>
@@ -166,10 +166,8 @@
         </button>
 
         <div class="network-badge">
-          <span>StudioNet</span>
+          <span>GenLayer Bradbury</span>
         </div>
-
-        <button class="faucet-btn" id="faucet-btn">+ Faucet 500 GEN</button>
       </div>
     </header>
 
@@ -179,7 +177,7 @@
       <section class="role-hero-banner" id="personalized-role-banner">
         <div class="role-hero-left">
           <h3 id="role-welcome-title">Welcome to Intellex Protocol</h3>
-          <p id="role-welcome-desc">Operating on GenLayer StudioNet with autonomous AI verification.</p>
+          <p id="role-welcome-desc">Operating on GenLayer Bradbury Network with autonomous AI verification.</p>
         </div>
         <div class="role-hero-actions">
           <button class="action-btn" id="role-primary-action-btn">
@@ -195,7 +193,7 @@
       <section class="hero-banner">
         <h2 class="hero-title">Autonomous AI-Governed Escrow &amp; <span class="highlight">Intelligent Contracts</span></h2>
         <p class="hero-desc">
-          Execute milestone-based agreements and prediction markets with zero human intermediary delay. GenLayer Intelligent Contracts run LLM reasoning and real-time web scrapers directly inside GenVM, verified via Optimistic Democracy consensus.
+          Execute milestone-based agreements and prediction markets with zero human intermediary delay. GenLayer Intelligent Contracts run LLM reasoning and real-time web scrapers directly inside GenVM, verified via Optimistic Democracy consensus on GenLayer Bradbury.
         </p>
 
         <div class="network-stats-row">
@@ -216,12 +214,8 @@
             <div class="stat-value neon" id="stat-validators">5 Nodes</div>
           </div>
           <div class="stat-item">
-            <span class="stat-label">Total Staked Value</span>
-            <div class="stat-value" id="stat-staked">194,000 GEN</div>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label">Connected Wallet Vault</span>
-            <div class="stat-value neon" id="wallet-balance">5,000.0 GEN</div>
+            <span class="stat-label">Network Environment</span>
+            <div class="stat-value" id="stat-network" style="color:var(--primary);font-weight:700;">GenLayer Bradbury</div>
           </div>
         </div>
       </section>
@@ -278,7 +272,7 @@
             GenLayer Intelligent Contracts Explorer
           </div>
           <span style="font-size:0.85rem;color:var(--text-muted);">
-            Real GenVM Python Contracts for GenLayer Studio v0.2.16
+            Real GenVM Python Contracts for GenLayer Bradbury / Studio v0.2.16
           </span>
         </div>
 
@@ -334,28 +328,26 @@
             </div>
             <div class="form-group" id="contractor-input-wrapper" style="display:none;">
               <label class="form-label">Contractor Wallet Address</label>
-              <input type="text" class="form-control" id="escrow-contractor" value="0xBob791C2DeB8b7F498616142718E84e50882e308">
+              <input type="text" class="form-control" id="escrow-contractor" placeholder="0x...">
             </div>
             <div class="form-group">
               <label class="form-label">Vault Deposit Amount (GEN)</label>
-              <input type="number" class="form-control" id="escrow-amount" value="500" min="10" required>
+              <input type="number" class="form-control" id="escrow-amount" placeholder="e.g. 500" min="10" required>
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Task Requirements</label>
-            <input type="text" class="form-control" id="escrow-requirements" value="Deliver functional modular codebase with unit tests." required>
+            <input type="text" class="form-control" id="escrow-requirements" placeholder="Requirements summary..." required>
           </div>
           <div class="form-group">
             <label class="form-label">AI Acceptance Criteria</label>
-            <textarea class="form-control" id="escrow-criteria" rows="3" required>Test coverage >= 85%
-Zero unhandled runtime exceptions
-Code includes comprehensive documentation</textarea>
+            <textarea class="form-control" id="escrow-criteria" rows="3" placeholder="Acceptance criteria for AI verification..." required></textarea>
           </div>
 
           <!-- Deposit Confirmation Notice -->
           <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);margin-bottom:1rem;font-size:0.82rem;color:var(--text-main);">
-            <strong>Client Deposit Notice:</strong> Upon submitting, the specified GEN amount will be transferred to the Intelligent Escrow Contract. The contract will issue an automated payment confirmation receipt confirming funds are locked until AI task verification completes.
+            <strong>Client Deposit Notice:</strong> Upon submitting, the specified GEN amount will be transferred to the Intelligent Escrow Contract on GenLayer Bradbury. The contract will issue an automated payment confirmation receipt confirming funds are locked until AI task verification completes.
           </div>
 
           <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:0.5rem;">
@@ -375,11 +367,11 @@ Code includes comprehensive documentation</textarea>
         <form id="submit-deliverable-form">
           <div class="form-group">
             <label class="form-label">Deliverable URL (GitHub / Figma / Docs)</label>
-            <input type="url" class="form-control" id="deliv-url" placeholder="https://github.com/myorg/project-repo" value="https://github.com/genlayer/audit-router-deliverable" required>
+            <input type="url" class="form-control" id="deliv-url" placeholder="https://github.com/myorg/project-repo" required>
           </div>
           <div class="form-group">
             <label class="form-label">Contractor Submission Notes</label>
-            <textarea class="form-control" id="deliv-notes" rows="4" placeholder="Detail how requirements were fulfilled..." required>Completed the core implementation, added automated unit tests, and verified zero regressions across all modules.</textarea>
+            <textarea class="form-control" id="deliv-notes" rows="4" placeholder="Detail how requirements were fulfilled..." required></textarea>
           </div>
           <button type="submit" class="action-btn" id="submit-deliv-btn" style="width:100%;margin-top:1rem;">
             Submit to Intelligent Contract
@@ -400,14 +392,14 @@ Code includes comprehensive documentation</textarea>
             Task Verification Passed!
           </div>
           <div style="font-size:0.85rem;color:var(--text-main);">
-            GenVM Committee verified your deliverable (Score: <span id="payout-score-tag">92</span>/100). The escrow vault is ready to disburse <strong id="payout-amount-tag" style="color:var(--primary);">500 GEN</strong>.
+            GenVM Committee verified your deliverable (Score: <span id="payout-score-tag">92</span>/100). The escrow vault is ready to disburse <strong id="payout-amount-tag" style="color:var(--primary);">500 GEN</strong> on GenLayer Bradbury.
           </div>
         </div>
 
         <form id="payout-address-form">
           <div class="form-group">
             <label class="form-label">Payout Destination Address</label>
-            <input type="text" class="form-control" id="payout-destination-address" placeholder="Enter your payout wallet address (e.g. 0x...)" value="0xBob791C2DeB8b7F498616142718E84e50882e308" required>
+            <input type="text" class="form-control" id="payout-destination-address" placeholder="Enter your payout address (e.g. 0x...)" required>
           </div>
 
           <button type="submit" class="action-btn" id="confirm-payout-btn" style="width:100%;margin-top:1rem;">
@@ -427,7 +419,7 @@ Code includes comprehensive documentation</textarea>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;">
           <div class="spinner"></div>
           <p style="font-size:0.88rem;color:var(--text-muted);margin:0;">
-            Executing decentralized non-deterministic verification across GenLayer committee validators.
+            Executing decentralized non-deterministic verification across GenLayer Bradbury committee validators.
           </p>
         </div>
 
@@ -528,12 +520,11 @@ Code includes comprehensive documentation</textarea>
           </div>
           <div class="form-group">
             <label class="form-label">Resolution Criteria</label>
-            <textarea class="form-control" id="market-criteria" rows="2" placeholder="Exact conditions under which outcome is YES vs NO..." required>Resolves YES if public on-chain gas tracker confirms average gas price was under 5 gwei.</textarea>
+            <textarea class="form-control" id="market-criteria" rows="2" placeholder="Exact conditions under which outcome is YES vs NO..." required></textarea>
           </div>
           <div class="form-group">
             <label class="form-label">Verified Resolution Sources (URLs, 1 per line)</label>
-            <textarea class="form-control" id="market-sources" rows="3" required>https://etherscan.io/gastracker
-https://ultrasound.money</textarea>
+            <textarea class="form-control" id="market-sources" rows="3" required></textarea>
           </div>
           <button type="submit" class="action-btn" style="width:100%;margin-top:1rem;">
             Deploy Truth Market
