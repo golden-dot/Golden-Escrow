@@ -1,6 +1,6 @@
 /**
  * api.js - GenLayer Intellex Protocol API Client & Persistence Engine
- * Enables real-time sync for authentic Client-created bounties (1-second polling & BroadcastChannel)
+ * Enables real-time sync for authentic Client-created bounties (Automatic Publicizing & Self-Claim Protection)
  */
 
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
@@ -116,12 +116,11 @@ class APIClient {
     return await fetchEscrowsData();
   }
 
-  // Create Escrow Bounty
+  // Create Escrow Bounty (ALL CREATED BOUNTIES ARE AUTOMATICALLY PUBLICIZED TO ALL BUILDERS)
   async createEscrow(data) {
     const escrows = await fetchEscrowsData();
     const maxId = escrows.reduce((max, e) => Math.max(max, parseInt(e.escrow_id || e.id || 0)), 0);
     const newId = maxId + 1;
-    const isPublic = data.payment_received || data.publicize_now;
     
     const newEscrow = {
       escrow_id: newId,
@@ -136,10 +135,10 @@ class APIClient {
       quality_threshold: data.quality_threshold || 80,
       deliverable_url: "",
       deliverable_notes: "",
-      status: isPublic ? "OPEN_FOR_CLAIM" : "AWAITING_DEPOSIT",
+      status: "OPEN_FOR_CLAIM", // AUTOMATICALLY PUBLICIZED FOR ALL BUILDERS TO SEE
       decision: "",
       score: 0,
-      payment_received: !!isPublic,
+      payment_received: true, // AUTOMATICALLY DEPOSITED & PUBLICIZED
       payout_address: "",
       createdAt: new Date().toISOString()
     };
@@ -162,7 +161,7 @@ class APIClient {
     throw new Error(`Escrow Bounty #${escrowId} not found`);
   }
 
-  // Publicize ALL unpublicized created bounties for a given client
+  // Publicize ALL created bounties for a given client
   async publicizeAllClientBounties(clientIdentifier) {
     const escrows = await fetchEscrowsData();
     const targetClient = (clientIdentifier || '').toLowerCase();
@@ -197,6 +196,14 @@ class APIClient {
     const escrows = await fetchEscrowsData();
     const target = escrows.find(e => (e.escrow_id || e.id) == data.escrow_id);
     if (target) {
+      // PREVENT CLIENT FROM CLAIMING THEIR OWN BOUNTY
+      const clientLower = (target.client || '').toLowerCase();
+      const participantLower = (data.participant_address || '').toLowerCase();
+
+      if (clientLower === participantLower) {
+        throw new Error("Clients cannot claim their own created bounty!");
+      }
+
       target.contractor = data.participant_address || "Builder";
       target.status = "ACTIVE";
       await syncEscrowsData(escrows);
