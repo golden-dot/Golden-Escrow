@@ -127,7 +127,7 @@
 
   <!-- SCREEN 3: MAIN ESCROW PLATFORM DASHBOARD -->
   <div class="app-screen" id="dashboard-screen">
-    <!-- Navbar (Optimized for Mobile & Desktop) -->
+    <!-- Navbar (Optimized for Mobile & Desktop with Web3 Wallet Extension Connection) -->
     <header class="navbar">
       <div class="navbar-header-top">
         <a href="#" class="brand">
@@ -143,6 +143,12 @@
         </a>
 
         <div class="header-mobile-right">
+          <!-- Web3 Wallet Connection Button -->
+          <button class="action-btn btn-sm" id="connect-wallet-btn" onclick="window.openConnectWalletModal()" style="gap:6px;">
+            <span id="wallet-btn-icon">⚡</span>
+            <span id="wallet-btn-text">Connect Wallet</span>
+          </button>
+
           <div class="user-profile-badge" id="nav-profile-badge">
             <div>
               <div id="nav-user-name" style="font-size:0.82rem;font-weight:700;line-height:1.2;">User</div>
@@ -197,7 +203,7 @@
       <section class="hero-banner">
         <h2 class="hero-title">Autonomous AI-Governed <span class="highlight">Escrow Bounties</span> &amp; Intelligent Contracts</h2>
         <p class="hero-desc">
-          Creating a bounty task deploys an AI-governed Intelligent Escrow Vault on GenLayer Bradbury. Milestone payouts are verified autonomously by LLM reasoning and real-time web scrapers running inside GenVM, secured by Optimistic Democracy consensus.
+          Connect your Web3 Wallet extension (MetaMask, Rabby, Coinbase, Trust) to deploy AI-governed Intelligent Escrow Vaults on GenLayer Bradbury. Milestone payouts are verified autonomously by LLM reasoning and real-time web scrapers running inside GenVM.
         </p>
 
         <div class="network-stats-row">
@@ -279,6 +285,30 @@
     <!-- TOAST CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
+    <!-- MODAL 0: CONNECT WEB3 WALLET EXTENSION (AUTO-DETECT ALL BROWSER WALLETS) -->
+    <div class="modal-overlay" id="connect-wallet-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Connect Web3 Wallet Extension</h3>
+          <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;">
+          Select your installed browser Web3 wallet extension to connect to GenLayer Bradbury Protocol:
+        </p>
+
+        <!-- Dynamic List of Detected Browser Wallets -->
+        <div id="detected-wallets-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:1.25rem;">
+          <!-- Rendered via JS detectAvailableWallets() -->
+        </div>
+
+        <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);font-size:0.8rem;color:var(--text-main);">
+          <strong>Connected Network:</strong> GenLayer Bradbury Testnet<br>
+          Connected wallet addresses are automatically assigned to your escrow bounty creations and claim payouts.
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL 1: CREATE ESCROW BOUNTY -->
     <div class="modal-overlay" id="create-escrow-modal">
       <div class="modal-card">
@@ -334,11 +364,11 @@
           </div>
 
           <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);margin-bottom:1rem;font-size:0.82rem;color:var(--text-main);">
-            <strong>Payment Required to Publicize:</strong> Submitting this bounty will create the escrow draft. You must send the deposit to the smart contract address to publicize the bounty to Builders.
+            <strong>Wallet Extension Integration:</strong> Deploying this bounty will use your connected Web3 extension wallet to lock funds into the smart contract address on GenLayer Bradbury.
           </div>
 
           <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:0.5rem;">
-            Proceed to Payment &amp; Deposit
+            Deploy &amp; Publicize Escrow Bounty
           </button>
         </form>
       </div>
@@ -348,16 +378,16 @@
     <div class="modal-overlay" id="deposit-payment-modal">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">Deposit Required to Publicize Escrow Bounty</h3>
+          <h3 class="modal-title">Confirm Wallet Extension Deposit</h3>
           <button class="close-btn" onclick="window.closeModals()">&times;</button>
         </div>
 
-        <div style="padding:14px;background:rgba(245, 158, 11, 0.1);border:1px solid rgba(245, 158, 11, 0.3);border-radius:var(--radius-md);margin-bottom:1.25rem;">
-          <div style="font-size:0.95rem;font-weight:700;color:var(--warning);margin-bottom:4px;">
-            Bounty Awaiting Contract Deposit
+        <div style="padding:14px;background:rgba(16, 185, 129, 0.1);border:1px solid rgba(16, 185, 129, 0.3);border-radius:var(--radius-md);margin-bottom:1.25rem;">
+          <div style="font-size:0.95rem;font-weight:700;color:var(--success);margin-bottom:4px;">
+            Web3 Wallet Extension Confirmation
           </div>
           <div style="font-size:0.85rem;color:var(--text-main);">
-            To publicize <strong id="deposit-task-title" style="color:var(--primary);">Bounty Task</strong> to Builders worldwide, please send <strong id="deposit-task-amount" style="color:var(--success);">500 GEN</strong> to the Intelligent Escrow Contract address below.
+            To publicize <strong id="deposit-task-title" style="color:var(--primary);">Bounty Task</strong> to Builders worldwide, confirm sending <strong id="deposit-task-amount" style="color:var(--success);">500 GEN</strong> from your connected Web3 wallet to the Intelligent Escrow Contract address.
           </div>
         </div>
 
@@ -372,10 +402,10 @@
 
         <div style="display:flex;flex-direction:column;gap:10px;">
           <button type="button" class="action-btn" id="confirm-deposit-sent-btn" style="width:100%;padding:14px;font-size:0.95rem;">
-            I Have Sent Deposit to Contract Address
+            Confirm &amp; Publicize via Wallet Extension
           </button>
           <button type="button" class="secondary-btn" onclick="window.closeModals()" style="width:100%;">
-            Pay Later (Keep as Awaiting Deposit Draft)
+            Cancel
           </button>
         </div>
       </div>

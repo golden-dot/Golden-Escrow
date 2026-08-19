@@ -1,6 +1,6 @@
 /**
  * app.js - Main Application Controller for GenLayer Intellex Protocol
- * Persistent Session & Global Bounty Marketplace with Deposit Verification & Builder Cancel Options
+ * Persistent Session & Global Bounty Marketplace with EIP-1193 Web3 Wallet Extension Connection
  * Network: GenLayer Bradbury
  */
 
@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentUsername: localStorage.getItem('intellex_username') || '',
     currentEmail: localStorage.getItem('intellex_email') || '',
     currentWallet: localStorage.getItem('intellex_wallet') || '',
+    connectedWallet: localStorage.getItem('intellex_connected_wallet') || '',
     escrows: [],
     markets: [],
     activeTab: 'escrows',
@@ -62,6 +63,178 @@ document.addEventListener('DOMContentLoaded', () => {
     pendingDepositEscrowId: null,
     activePayoutEscrowId: null
   };
+
+  // WEB3 WALLET EXTENSION DETECTION & CONNECTION ENGINE
+  window.detectAvailableWallets = () => {
+    const list = [];
+
+    // 1. MetaMask
+    if (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isRabby) {
+      list.push({ id: 'metamask', name: 'MetaMask', icon: '🦊', provider: window.ethereum, installed: true });
+    } else {
+      list.push({ id: 'metamask', name: 'MetaMask Extension', icon: '🦊', provider: null, installed: false, downloadUrl: 'https://metamask.io/download/' });
+    }
+
+    // 2. Rabby Wallet
+    if (window.ethereum && window.ethereum.isRabby) {
+      list.push({ id: 'rabby', name: 'Rabby Wallet', icon: '🐰', provider: window.ethereum, installed: true });
+    } else {
+      list.push({ id: 'rabby', name: 'Rabby Wallet', icon: '🐰', provider: null, installed: false, downloadUrl: 'https://rabby.io/' });
+    }
+
+    // 3. Coinbase Wallet
+    if (window.ethereum && (window.ethereum.isCoinbaseWallet || window.coinbaseWalletExtension)) {
+      list.push({ id: 'coinbase', name: 'Coinbase Wallet', icon: '🔵', provider: window.ethereum, installed: true });
+    } else {
+      list.push({ id: 'coinbase', name: 'Coinbase Wallet', icon: '🔵', provider: null, installed: false, downloadUrl: 'https://www.coinbase.com/wallet' });
+    }
+
+    // 4. Trust Wallet
+    if (window.ethereum && (window.ethereum.isTrust || window.trustwallet)) {
+      list.push({ id: 'trust', name: 'Trust Wallet', icon: '🛡️', provider: window.trustwallet || window.ethereum, installed: true });
+    } else {
+      list.push({ id: 'trust', name: 'Trust Wallet', icon: '🛡️', provider: null, installed: false, downloadUrl: 'https://trustwallet.com/' });
+    }
+
+    // 5. Rainbow Wallet
+    if (window.ethereum && window.ethereum.isRainbow) {
+      list.push({ id: 'rainbow', name: 'Rainbow Wallet', icon: '🌈', provider: window.ethereum, installed: true });
+    }
+
+    // 6. OKX Wallet
+    if (window.okxwallet || (window.ethereum && window.ethereum.isOKXWallet)) {
+      list.push({ id: 'okx', name: 'OKX Wallet', icon: '🖤', provider: window.okxwallet || window.ethereum, installed: true });
+    }
+
+    // 7. Phantom / Solflare Web3
+    if (window.phantom && window.phantom.ethereum) {
+      list.push({ id: 'phantom', name: 'Phantom Wallet', icon: '👻', provider: window.phantom.ethereum, installed: true });
+    }
+
+    // 8. Generic Injected Provider fallback
+    if (window.ethereum && !list.some(w => w.installed && w.provider === window.ethereum)) {
+      list.push({ id: 'injected', name: 'Browser Web3 Extension', icon: '⚡', provider: window.ethereum, installed: true });
+    }
+
+    return list;
+  };
+
+  window.openConnectWalletModal = () => {
+    const modal = document.getElementById('connect-wallet-modal');
+    const container = document.getElementById('detected-wallets-list');
+    if (!modal || !container) return;
+
+    container.innerHTML = '';
+    const wallets = window.detectAvailableWallets();
+
+    wallets.forEach(w => {
+      const item = document.createElement('div');
+      const isThisConnected = state.connectedWallet && state.connectedWallet.length > 0;
+      item.className = `wallet-option-item ${isThisConnected ? 'connected' : ''}`;
+      
+      let statusBadge = w.installed 
+        ? `<span class="wallet-item-status installed">Installed</span>`
+        : `<a href="${w.downloadUrl}" target="_blank" class="wallet-item-status" style="text-decoration:underline;" onclick="event.stopPropagation()">Install Extension</a>`;
+
+      item.innerHTML = `
+        <div class="wallet-item-left">
+          <div class="wallet-item-icon">${w.icon}</div>
+          <div class="wallet-item-name">${w.name}</div>
+        </div>
+        ${statusBadge}
+      `;
+
+      if (w.installed) {
+        item.onclick = async () => {
+          await window.connectSelectedWallet(w.provider, w.name);
+        };
+      }
+
+      container.appendChild(item);
+    });
+
+    modal.classList.add('active');
+  };
+
+  window.connectSelectedWallet = async (provider, walletName) => {
+    const targetProvider = provider || window.ethereum;
+    if (!targetProvider) {
+      showToast(`Extension not detected. Please install ${walletName || 'a Web3 Wallet extension'}.`, 'danger');
+      return;
+    }
+
+    try {
+      showToast(`Requesting account access from ${walletName}...`, 'info');
+      const accounts = await targetProvider.request({ method: 'eth_requestAccounts' });
+
+      if (accounts && accounts.length > 0) {
+        const address = accounts[0];
+        state.connectedWallet = address;
+        localStorage.setItem('intellex_connected_wallet', address);
+
+        window.updateWalletUI();
+        window.closeModals();
+        showToast(`Connected ${walletName}: ${address.slice(0,6)}...${address.slice(-4)}`, 'success');
+      }
+    } catch (err) {
+      showToast(`Wallet connection error: ${err.message || 'User rejected request'}`, 'danger');
+    }
+  };
+
+  window.disconnectWallet = () => {
+    state.connectedWallet = '';
+    localStorage.removeItem('intellex_connected_wallet');
+    window.updateWalletUI();
+    showToast('Wallet disconnected', 'info');
+  };
+
+  window.updateWalletUI = () => {
+    const walletBtnIcon = document.getElementById('wallet-btn-icon');
+    const walletBtnText = document.getElementById('wallet-btn-text');
+    const walletBtn = document.getElementById('connect-wallet-btn');
+
+    if (state.connectedWallet && state.connectedWallet.length > 0) {
+      const shortAddr = `${state.connectedWallet.slice(0, 6)}...${state.connectedWallet.slice(-4)}`;
+      if (walletBtnIcon) walletBtnIcon.textContent = '🟢';
+      if (walletBtnText) walletBtnText.textContent = shortAddr;
+      if (walletBtn) {
+        walletBtn.style.background = 'rgba(16, 185, 129, 0.15)';
+        walletBtn.style.borderColor = 'var(--success)';
+        walletBtn.style.color = 'var(--success)';
+        walletBtn.title = `Connected: ${state.connectedWallet} (Click to disconnect/switch)`;
+        walletBtn.onclick = () => {
+          if (confirm(`Connected Wallet Extension Address: ${state.connectedWallet}\nDo you want to disconnect?`)) {
+            window.disconnectWallet();
+          }
+        };
+      }
+    } else {
+      if (walletBtnIcon) walletBtnIcon.textContent = '⚡';
+      if (walletBtnText) walletBtnText.textContent = 'Connect Wallet';
+      if (walletBtn) {
+        walletBtn.style.background = 'var(--primary-gradient)';
+        walletBtn.style.borderColor = 'transparent';
+        walletBtn.style.color = '#fff';
+        walletBtn.title = 'Connect Web3 Wallet Extension';
+        walletBtn.onclick = () => window.openConnectWalletModal();
+      }
+    }
+  };
+
+  // EIP-1193 Auto Listeners for provider account/network changes
+  if (window.ethereum && window.ethereum.on) {
+    window.ethereum.on('accountsChanged', (accounts) => {
+      if (accounts && accounts.length > 0) {
+        state.connectedWallet = accounts[0];
+        localStorage.setItem('intellex_connected_wallet', accounts[0]);
+        showToast(`Wallet account switched to: ${accounts[0].slice(0,6)}...${accounts[0].slice(-4)}`, 'info');
+      } else {
+        state.connectedWallet = '';
+        localStorage.removeItem('intellex_connected_wallet');
+      }
+      window.updateWalletUI();
+    });
+  }
 
   // 1-Click Contract Address Copy Helper
   window.copyContractAddress = (address) => {
@@ -190,6 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           showToast(`Logged in as ${state.currentUsername} (${account.role.toUpperCase()})`, 'success');
           updateRoleUI();
+          window.updateWalletUI();
           showScreen('dashboard');
           loadEscrows();
           loadMarkets();
@@ -293,6 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         showToast(`Role permanently locked to: ${state.currentRole.toUpperCase()}`, 'success');
         updateRoleUI();
+        window.updateWalletUI();
         showScreen('dashboard');
         loadEscrows();
         loadMarkets();
@@ -507,7 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Publicize all unpublicized bounties for current client
   window.publicizeAllMyBounties = async (btnElement) => {
-    const user = state.currentUsername || state.currentEmail || 'Client';
+    const user = state.connectedWallet || state.currentUsername || state.currentEmail || 'Client';
     if (btnElement) {
       btnElement.classList.add('btn-loading');
       btnElement.disabled = true;
@@ -548,7 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!escrowsContainer) return;
     escrowsContainer.innerHTML = '';
 
-    const currentUser = (state.currentUsername || '').toLowerCase();
+    const currentUser = (state.connectedWallet || state.currentUsername || '').toLowerCase();
     const currentEmail = (state.currentEmail || '').toLowerCase();
     const isBuilder = state.currentRole === 'builder';
     const isClient = state.currentRole === 'client';
@@ -626,7 +801,7 @@ document.addEventListener('DOMContentLoaded', () => {
       escrowsContainer.innerHTML = `
         <div style="color:var(--text-muted);grid-column:1/-1;text-align:center;padding:3rem;background:var(--bg-card);border-radius:var(--radius-lg);border:1px solid var(--border-subtle);">
           <div style="font-size:1.1rem;font-weight:700;color:var(--text-main);margin-bottom:0.25rem;">No active escrow bounties found</div>
-          <div>${isClient ? 'Click "+ Deploy New Escrow Bounty" to post a task and send deposit!' : 'Waiting for clients to post and deposit bounties.'}</div>
+          <div>${isClient ? 'Click "+ Deploy New Escrow Bounty" to post a task!' : 'Waiting for clients to post and deposit bounties.'}</div>
         </div>
       `;
       return;
@@ -784,7 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const escrow = state.escrows.find(e => (e.escrow_id || e.id) == escrowId);
     if (escrow) {
       const clientOwnerLower = (escrow.client || '').toLowerCase();
-      const currentUser = (state.currentUsername || '').toLowerCase();
+      const currentUser = (state.connectedWallet || state.currentUsername || '').toLowerCase();
       const currentEmail = (state.currentEmail || '').toLowerCase();
 
       if (clientOwnerLower === currentUser || clientOwnerLower === currentEmail) {
@@ -801,7 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await API.joinEscrow({
         escrow_id: escrowId,
         role: 'contractor',
-        participant_address: state.currentUsername || state.currentEmail || "Builder"
+        participant_address: state.connectedWallet || state.currentUsername || state.currentEmail || "Builder"
       });
       showToast(`Successfully claimed Escrow Bounty #${escrowId}! Assigned as Contractor.`, 'success');
       loadEscrows();
@@ -924,10 +1099,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const amount = parseFloat(document.getElementById('escrow-amount').value) || 100;
+      const clientAddr = state.connectedWallet || state.currentUsername || state.currentEmail || "Client";
 
       try {
         const res = await API.createEscrow({
-          client: state.currentUsername || state.currentEmail || "Client",
+          client: clientAddr,
           contractor: assignmentSelect && assignmentSelect.value === 'assigned' ? document.getElementById('escrow-contractor').value : '0x0000000000000000000000000000000000000000',
           title: document.getElementById('escrow-title').value,
           description: document.getElementById('escrow-desc').value,
@@ -935,7 +1111,8 @@ document.addEventListener('DOMContentLoaded', () => {
           requirements: document.getElementById('escrow-requirements').value,
           criteria: document.getElementById('escrow-criteria').value,
           amount: amount,
-          quality_threshold: 80
+          quality_threshold: 80,
+          publicize_now: true
         });
         if (btn) {
           btn.classList.remove('btn-loading');
@@ -944,8 +1121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.closeModals();
         loadEscrows();
 
-        // Open Deposit Required Modal for the client to confirm payment
-        window.openDepositRequiredModal(res.escrow_id);
+        showToast(`Deployed & Publicized Escrow Bounty #${res.escrow_id} via Web3 Wallet!`, 'success');
       } catch (err) {
         if (btn) {
           btn.classList.remove('btn-loading');
@@ -956,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // CONFIRM DEPOSIT PAYMENT SENT BUTTON HANDLER (Publicizes Bounty to All Builders Worldwide)
+  // CONFIRM DEPOSIT PAYMENT SENT BUTTON HANDLER
   const confirmDepositSentBtn = document.getElementById('confirm-deposit-sent-btn');
   if (confirmDepositSentBtn) {
     confirmDepositSentBtn.addEventListener('click', async () => {
@@ -971,12 +1147,12 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmDepositSentBtn.disabled = false;
         window.closeModals();
 
-        showToast(`Payment Confirmed & Verified! Escrow Bounty #${state.pendingDepositEscrowId} is now PUBLICIZED to all Builders worldwide!`, 'success');
+        showToast(`Wallet Extension Confirmation Verified! Escrow Bounty #${state.pendingDepositEscrowId} is PUBLICIZED!`, 'success');
         loadEscrows();
       } catch (e) {
         confirmDepositSentBtn.classList.remove('btn-loading');
         confirmDepositSentBtn.disabled = false;
-        showToast('Deposit verification error: ' + e.message, 'danger');
+        showToast('Wallet confirmation error: ' + e.message, 'danger');
       }
     });
   }
@@ -1000,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sources = sourcesText ? sourcesText.split('\n').filter(s => s.trim().length > 0) : [];
 
         const res = await API.createMarket({
-          creator: state.currentUsername || state.currentEmail || "Predictor",
+          creator: state.connectedWallet || state.currentUsername || state.currentEmail || "Predictor",
           question: question,
           category: category,
           resolution_criteria: criteria,
@@ -1038,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await API.submitDeliverable({
           escrow_id: state.activePayoutEscrowId,
-          sender: state.currentUsername || state.currentEmail || "Builder",
+          sender: state.connectedWallet || state.currentUsername || state.currentEmail || "Builder",
           deliverable_url: document.getElementById('deliv-url').value,
           deliverable_notes: document.getElementById('deliv-notes').value
         });
@@ -1142,6 +1318,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (scoreTag) scoreTag.textContent = escrow ? (escrow.score || 92) : 92;
     if (amountTag) amountTag.textContent = `${escrow ? escrow.amount : 500} GEN`;
 
+    const payoutInput = document.getElementById('payout-destination-address');
+    if (payoutInput && state.connectedWallet) {
+      payoutInput.value = state.connectedWallet;
+    }
+
     document.getElementById('payout-address-modal').classList.add('active');
   };
 
@@ -1229,7 +1410,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await API.placeBet({
           market_id: activeMarketId,
-          sender: state.currentUsername || state.currentEmail || "Predictor",
+          sender: state.connectedWallet || state.currentUsername || state.currentEmail || "Predictor",
           side: activeMarketSide,
           amount: parseFloat(document.getElementById('stake-amount').value)
         });
@@ -1270,6 +1451,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // INITIALIZE SESSION RESTORATION ON PAGE REFRESH
   loadNodeStatus();
+  window.updateWalletUI();
 
   const isAlreadyLoggedIn = localStorage.getItem('intellex_logged_in') === 'true';
   const savedRole = localStorage.getItem('intellex_role');
@@ -1283,6 +1465,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.currentRole = savedRole;
 
     updateRoleUI();
+    window.updateWalletUI();
     showScreen('dashboard');
     loadEscrows();
     loadMarkets();

@@ -1168,15 +1168,66 @@ textarea.form-control {
     border-radius: var(--radius-md);
   }
 
-  .auth-card {
-    padding: 1.75rem 1.25rem;
-    max-width: 100%;
-  }
+/* Web3 Wallet Extension Option Item */
+.wallet-option-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+}
 
-  .role-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
+.wallet-option-item:hover {
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.08);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glow);
+}
+
+.wallet-option-item.connected {
+  border-color: var(--success);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.wallet-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wallet-item-icon {
+  font-size: 1.5rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-glass);
+  border-radius: 8px;
+}
+
+.wallet-item-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+.wallet-item-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+}
+
+.wallet-item-status.installed {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
 }
 
 @media (max-width: 480px) {
