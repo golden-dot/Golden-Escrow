@@ -1,10 +1,15 @@
 /**
- * api.js - GenLayer Intellex Protocol API Client / Shared Global Storage Bridge
- * Persists escrows and markets globally across logins, logouts, and page refreshes!
+ * api.js - GenLayer Intellex Protocol API Client & Cloud Storage Sync
+ * Enables real-time cross-device sync so bounties created by Clients on any browser
+ * are instantly publicized to all Builders worldwide!
  */
 
 const DEPLOYED_ESCROW_CONTRACT = "0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec";
 const DEPLOYED_ORACLE_CONTRACT = "0x503402BF6Ccadf366D269FE397B79c2CFfF011AC";
+
+// Cloud Sync Endpoint (CORS-enabled KV bin for cross-browser live sync)
+const CLOUD_SYNC_ESCROWS_URL = "https://kvdb.io/intellex_protocol_bradbury_v1/escrows";
+const CLOUD_SYNC_MARKETS_URL = "https://kvdb.io/intellex_protocol_bradbury_v1/markets";
 
 const DEFAULT_ESCROWS = [
   {
@@ -49,39 +54,53 @@ const DEFAULT_ESCROWS = [
   }
 ];
 
-// Load or Initialize Global Storage across all user sessions
-function getGlobalEscrows() {
+// Helper to get local fallback escrows
+function getLocalEscrows() {
   try {
     const data = localStorage.getItem('intellex_global_escrows');
-    if (!data) {
-      localStorage.setItem('intellex_global_escrows', JSON.stringify(DEFAULT_ESCROWS));
-      return DEFAULT_ESCROWS;
-    }
+    if (!data) return DEFAULT_ESCROWS;
     const parsed = JSON.parse(data);
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      localStorage.setItem('intellex_global_escrows', JSON.stringify(DEFAULT_ESCROWS));
-      return DEFAULT_ESCROWS;
-    }
-    return parsed;
+    return (Array.isArray(parsed) && parsed.length > 0) ? parsed : DEFAULT_ESCROWS;
   } catch (e) {
     return DEFAULT_ESCROWS;
   }
 }
 
-function saveGlobalEscrows(escrows) {
+function saveLocalEscrows(escrows) {
   localStorage.setItem('intellex_global_escrows', JSON.stringify(escrows));
 }
 
-function getGlobalMarkets() {
+// Cloud Storage Sync Helpers
+async function fetchCloudEscrows() {
   try {
-    return JSON.parse(localStorage.getItem('intellex_global_markets')) || [];
+    const response = await fetch(CLOUD_SYNC_ESCROWS_URL, { cache: 'no-store' });
+    if (response.ok) {
+      const text = await response.text();
+      if (text && text.trim().startsWith('[')) {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          saveLocalEscrows(parsed);
+          return parsed;
+        }
+      }
+    }
   } catch (e) {
-    return [];
+    console.warn("Cloud sync fetch fallback to local storage:", e);
   }
+  return getLocalEscrows();
 }
 
-function saveGlobalMarkets(markets) {
-  localStorage.setItem('intellex_global_markets', JSON.stringify(markets));
+async function syncCloudEscrows(escrows) {
+  saveLocalEscrows(escrows);
+  try {
+    await fetch(CLOUD_SYNC_ESCROWS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(escrows)
+    });
+  } catch (e) {
+    console.warn("Cloud sync push error:", e);
+  }
 }
 
 class APIClient {
@@ -111,19 +130,12 @@ class APIClient {
   }
 
   async getEscrows() {
-    try {
-      if (this.baseUrl) {
-        const res = await fetch(`${this.baseUrl}/api/escrows`);
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    return getGlobalEscrows();
+    return await fetchCloudEscrows();
   }
 
+  // Create Escrow in AWAITING_DEPOSIT state (Will NOT be publicized until payment is confirmed!)
   async createEscrow(data) {
-    const escrows = getGlobalEscrows();
+    const escrows = await fetchCloudEscrows();
     const newId = escrows.length + 1;
     const newEscrow = {
       escrow_id: newId,
@@ -138,56 +150,70 @@ class APIClient {
       quality_threshold: data.quality_threshold || 80,
       deliverable_url: "",
       deliverable_notes: "",
-      status: (data.contractor && !data.contractor.startsWith('0x0000')) ? "ACTIVE" : "OPEN_FOR_CLAIM",
+      // UNPAID BOUNTIES START IN AWAITING_DEPOSIT AND ARE NOT PUBLICIZED
+      status: "AWAITING_DEPOSIT",
       decision: "",
       score: 0,
-      payment_received: true,
+      payment_received: false,
       payout_address: "",
       createdAt: new Date().toISOString()
     };
     escrows.push(newEscrow);
-    saveGlobalEscrows(escrows);
+    await syncCloudEscrows(escrows);
     return { success: true, escrow_id: newId, escrow: newEscrow };
   }
 
+  // Confirm Deposit Payment & Publicize Bounty to All Builders Worldwide
+  async confirmEscrowDeposit(escrowId) {
+    const escrows = await fetchCloudEscrows();
+    const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
+    if (target) {
+      target.payment_received = true;
+      target.status = "OPEN_FOR_CLAIM";
+      await syncCloudEscrows(escrows);
+      return { success: true, message: `Payment verified! Escrow #${escrowId} is now publicized to all Builders.`, escrow: target };
+    }
+    throw new Error(`Escrow #${escrowId} not found`);
+  }
+
   async deleteEscrow(escrowId) {
-    let escrows = getGlobalEscrows();
+    let escrows = await fetchCloudEscrows();
     escrows = escrows.filter(e => (e.escrow_id || e.id) !== escrowId);
-    saveGlobalEscrows(escrows);
+    await syncCloudEscrows(escrows);
     return { success: true, message: `Escrow #${escrowId} deleted` };
   }
 
   async joinEscrow(data) {
-    const escrows = getGlobalEscrows();
+    const escrows = await fetchCloudEscrows();
     const target = escrows.find(e => (e.escrow_id || e.id) === data.escrow_id);
     if (target) {
       target.contractor = data.participant_address || "Builder";
       target.status = "ACTIVE";
-      saveGlobalEscrows(escrows);
+      await syncCloudEscrows(escrows);
     }
     return { success: true, message: "Claimed bounty as contractor" };
   }
 
   async submitDeliverable(data) {
-    const escrows = getGlobalEscrows();
+    const escrows = await fetchCloudEscrows();
     const target = escrows.find(e => (e.escrow_id || e.id) === data.escrow_id);
     if (target) {
       target.deliverable_url = data.deliverable_url;
       target.deliverable_notes = data.deliverable_notes;
       target.status = "SUBMITTED";
-      saveGlobalEscrows(escrows);
+      await syncCloudEscrows(escrows);
     }
     return { success: true, message: "Deliverable submitted" };
   }
 
   async resolveMilestone(escrowId) {
-    const escrows = getGlobalEscrows();
+    const escrows = await fetchCloudEscrows();
     const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
     if (target) {
       target.decision = "ACCEPT";
       target.score = 92;
       target.status = "VERIFIED_AWAITING_PAYOUT_ADDRESS";
-      saveGlobalEscrows(escrows);
+      await syncCloudEscrows(escrows);
     }
     return {
       success: true,
@@ -205,12 +231,12 @@ class APIClient {
   }
 
   async releasePayout(escrowId, destinationAddress) {
-    const escrows = getGlobalEscrows();
+    const escrows = await fetchCloudEscrows();
     const target = escrows.find(e => (e.escrow_id || e.id) === escrowId);
     if (target) {
       target.payout_address = destinationAddress;
       target.status = "ACCEPTED";
-      saveGlobalEscrows(escrows);
+      await syncCloudEscrows(escrows);
     }
     return {
       success: true,
@@ -220,11 +246,16 @@ class APIClient {
   }
 
   async getMarkets() {
-    return getGlobalMarkets();
+    try {
+      const data = localStorage.getItem('intellex_global_markets');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
   }
 
   async createMarket(data) {
-    const markets = getGlobalMarkets();
+    const markets = await this.getMarkets();
     const newId = markets.length + 1;
     const newMarket = {
       market_id: newId,
@@ -241,29 +272,29 @@ class APIClient {
       createdAt: new Date().toISOString()
     };
     markets.push(newMarket);
-    saveGlobalMarkets(markets);
+    localStorage.setItem('intellex_global_markets', JSON.stringify(markets));
     return { success: true, market_id: newId, market: newMarket };
   }
 
   async placeBet(data) {
-    const markets = getGlobalMarkets();
+    const markets = await this.getMarkets();
     const m = markets.find(m => (m.market_id || m.id) === data.market_id);
     if (m) {
       if (data.side.toUpperCase() === 'YES') m.total_yes += data.amount;
       else m.total_no += data.amount;
-      saveGlobalMarkets(markets);
+      localStorage.setItem('intellex_global_markets', JSON.stringify(markets));
     }
     return { success: true };
   }
 
   async resolveMarket(marketId) {
-    const markets = getGlobalMarkets();
+    const markets = await this.getMarkets();
     const m = markets.find(m => (m.market_id || m.id) === marketId);
     if (m) {
       m.outcome = "YES";
       m.confidence = 95;
       m.status = "RESOLVED";
-      saveGlobalMarkets(markets);
+      localStorage.setItem('intellex_global_markets', JSON.stringify(markets));
     }
     return {
       success: true,

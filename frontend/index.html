@@ -50,7 +50,7 @@
           </button>
         </form>
 
-        <!-- FORM 2: CREATE NEW ACCOUNT (PREVENTS DUPLICATE EMAILS) -->
+        <!-- FORM 2: CREATE NEW ACCOUNT -->
         <form id="auth-signup-form" style="display:none;">
           <div class="form-group">
             <label class="form-label">Full Name</label>
@@ -79,7 +79,7 @@
     </div>
   </div>
 
-  <!-- SCREEN 2: INITIAL PERMANENT ROLE SELECTION PAGE (LOCKED UPON CHOICE) -->
+  <!-- SCREEN 2: INITIAL PERMANENT ROLE SELECTION PAGE -->
   <div class="app-screen" id="role-selection-screen">
     <div class="role-screen-container">
       <div class="role-header">
@@ -101,7 +101,7 @@
         <div class="role-card-option" id="role-card-client" data-role="client">
           <span class="role-tag-badge">CLIENT / BUYER</span>
           <h3>Client Account</h3>
-          <p>Create escrow tasks, define strict LLM acceptance criteria, deposit escrow funds into vault, and review AI verification reports.</p>
+          <p>Create escrow tasks, deposit escrow funds to contract address to publicize bounties globally, and review AI verification reports.</p>
         </div>
 
         <!-- Option C: DAO Arbiter -->
@@ -279,19 +279,8 @@
     <div class="modal-overlay" id="create-escrow-modal">
       <div class="modal-card">
         <div class="modal-header">
-          <h3 class="modal-title">Deploy Escrow &amp; Deposit Payment</h3>
+          <h3 class="modal-title">Deploy Escrow Vault</h3>
           <button class="close-btn" onclick="window.closeModals()">&times;</button>
-        </div>
-
-        <!-- Copy Escrow Contract Address Box -->
-        <div style="background:var(--bg-glass);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div>
-            <div style="font-size:0.75rem;color:var(--text-muted);">GenLayer Intelligent Escrow Contract Address</div>
-            <div style="font-family:var(--font-mono);font-size:0.82rem;color:var(--primary);font-weight:600;word-break:break-all;">0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec</div>
-          </div>
-          <button type="button" class="action-btn btn-sm" onclick="window.copyContractAddress('0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec')" style="white-space:nowrap;font-size:0.75rem;padding:6px 12px;">
-            Copy Contract Address
-          </button>
         </div>
 
         <form id="create-escrow-form">
@@ -340,15 +329,51 @@
             <textarea class="form-control" id="escrow-criteria" rows="3" placeholder="Acceptance criteria for AI verification..." required></textarea>
           </div>
 
-          <!-- Deposit Confirmation Notice -->
           <div style="padding:12px;background:rgba(var(--primary-rgb),0.08);border:1px solid rgba(var(--primary-rgb),0.25);border-radius:var(--radius-md);margin-bottom:1rem;font-size:0.82rem;color:var(--text-main);">
-            <strong>Client Deposit Notice:</strong> Send the deposit amount directly to the contract address above. Upon submitting, funds are received and locked in the vault until AI task verification completes.
+            <strong>Payment Required to Publicize:</strong> Submitting this task will create the escrow draft. You must send the deposit to the contract address to publicize the bounty to Builders.
           </div>
 
           <button type="submit" class="action-btn" id="create-escrow-submit-btn" style="width:100%;margin-top:0.5rem;">
-            Deposit Funds &amp; Deploy Escrow
+            Proceed to Payment &amp; Deposit
           </button>
         </form>
+      </div>
+    </div>
+
+    <!-- MODAL 1.5: DEPOSIT PAYMENT REQUIRED TO PUBLICIZE BOUNTY -->
+    <div class="modal-overlay" id="deposit-payment-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">Deposit Required to Publicize Bounty</h3>
+          <button class="close-btn" onclick="window.closeModals()">&times;</button>
+        </div>
+
+        <div style="padding:14px;background:rgba(245, 158, 11, 0.1);border:1px solid rgba(245, 158, 11, 0.3);border-radius:var(--radius-md);margin-bottom:1.25rem;">
+          <div style="font-size:0.95rem;font-weight:700;color:var(--warning);margin-bottom:4px;">
+            Bounty Awaiting Contract Deposit
+          </div>
+          <div style="font-size:0.85rem;color:var(--text-main);">
+            To publicize <strong id="deposit-task-title" style="color:var(--primary);">Bounty Task</strong> to Builders worldwide, please send <strong id="deposit-task-amount" style="color:var(--success);">500 GEN</strong> to the Intelligent Escrow Contract address below.
+          </div>
+        </div>
+
+        <!-- Copy Escrow Contract Address Box -->
+        <div style="background:var(--bg-glass);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:12px;margin-bottom:1.25rem;">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">GenLayer Intelligent Escrow Contract Address (GenLayer Bradbury)</div>
+          <div style="font-family:var(--font-mono);font-size:0.88rem;color:var(--primary);font-weight:700;word-break:break-all;margin-bottom:8px;">0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec</div>
+          <button type="button" class="secondary-btn btn-sm" onclick="window.copyContractAddress('0xc40d279E9f8a48AEE0c6383A23Bf3431d0B620Ec')" style="font-size:0.78rem;">
+            Copy Contract Address
+          </button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button type="button" class="action-btn" id="confirm-deposit-sent-btn" style="width:100%;padding:14px;font-size:0.95rem;">
+            I Have Sent Deposit to Contract Address
+          </button>
+          <button type="button" class="secondary-btn" onclick="window.closeModals()" style="width:100%;">
+            Pay Later (Keep as Awaiting Deposit Draft)
+          </button>
+        </div>
       </div>
     </div>
 
