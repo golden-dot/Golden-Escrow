@@ -50,16 +50,23 @@ document.addEventListener('DOMContentLoaded', () => {
     activePayoutEscrowId: null
   };
 
-  // Screen Switcher Helper
+  // Screen Switcher Helper (Handles role-selection-screen, login-screen, dashboard-screen)
   function showScreen(screenId) {
+    let targetId = screenId;
+    if (screenId === 'role') targetId = 'role-selection';
+    
     document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
-    const target = document.getElementById(`${screenId}-screen`);
+    const target = document.getElementById(`${targetId}-screen`);
     if (target) {
       target.classList.add('active');
       state.currentScreen = screenId;
       window.scrollTo(0, 0);
+    } else {
+      console.warn(`Screen element not found for ${targetId}-screen`);
     }
   }
+
+  window.showScreen = showScreen;
 
   // Toast utility
   function showToast(message, type = 'info') {
@@ -84,15 +91,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const signupForm = document.getElementById('auth-signup-form');
 
     if (tab === 'signup') {
-      loginBtn.classList.remove('active');
-      signupBtn.classList.add('active');
-      loginForm.style.display = 'none';
-      signupForm.style.display = 'block';
+      if (loginBtn) loginBtn.classList.remove('active');
+      if (signupBtn) signupBtn.classList.add('active');
+      if (loginForm) loginForm.style.display = 'none';
+      if (signupForm) signupForm.style.display = 'block';
     } else {
-      signupBtn.classList.remove('active');
-      loginBtn.classList.add('active');
-      signupForm.style.display = 'none';
-      loginForm.style.display = 'block';
+      if (signupBtn) signupBtn.classList.remove('active');
+      if (loginBtn) loginBtn.classList.add('active');
+      if (signupForm) signupForm.style.display = 'none';
+      if (loginForm) loginForm.style.display = 'block';
     }
   };
 
@@ -105,18 +112,22 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const identifier = document.getElementById('login-identifier').value.trim() || 'alice@genlayer.io';
       
-      loginSubmitBtn.classList.add('btn-loading');
-      loginSubmitBtn.disabled = true;
+      if (loginSubmitBtn) {
+        loginSubmitBtn.classList.add('btn-loading');
+        loginSubmitBtn.disabled = true;
+      }
 
       setTimeout(() => {
-        loginSubmitBtn.classList.remove('btn-loading');
-        loginSubmitBtn.disabled = false;
+        if (loginSubmitBtn) {
+          loginSubmitBtn.classList.remove('btn-loading');
+          loginSubmitBtn.disabled = false;
+        }
 
         state.currentUsername = identifier.includes('@') ? identifier.split('@')[0] : identifier;
 
         showToast(`Authenticated as ${state.currentUsername}`, 'success');
         showScreen('role');
-      }, 700);
+      }, 500);
     });
   }
 
@@ -130,18 +141,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const fullName = document.getElementById('signup-fullname').value.trim();
       const email = document.getElementById('signup-email').value.trim();
 
-      signupSubmitBtn.classList.add('btn-loading');
-      signupSubmitBtn.disabled = true;
+      if (signupSubmitBtn) {
+        signupSubmitBtn.classList.add('btn-loading');
+        signupSubmitBtn.disabled = true;
+      }
 
       setTimeout(() => {
-        signupSubmitBtn.classList.remove('btn-loading');
-        signupSubmitBtn.disabled = false;
+        if (signupSubmitBtn) {
+          signupSubmitBtn.classList.remove('btn-loading');
+          signupSubmitBtn.disabled = false;
+        }
 
         state.currentUsername = fullName || email.split('@')[0];
 
         showToast(`Account created successfully for ${state.currentUsername}!`, 'success');
         showScreen('role');
-      }, 800);
+      }, 600);
     });
   }
 
@@ -174,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen('dashboard');
         loadEscrows();
         loadMarkets();
-      }, 600);
+      }, 500);
     });
   }
 
@@ -572,9 +587,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('submit-deliverable-modal').classList.add('active');
   };
 
-  document.getElementById('open-create-escrow-btn').addEventListener('click', () => {
-    document.getElementById('create-escrow-modal').classList.add('active');
-  });
+  const openCreateBtn = document.getElementById('open-create-escrow-btn');
+  if (openCreateBtn) {
+    openCreateBtn.addEventListener('click', () => {
+      document.getElementById('create-escrow-modal').classList.add('active');
+    });
+  }
 
   const assignmentSelect = document.getElementById('escrow-assignment-mode');
   const contractorWrapper = document.getElementById('contractor-input-wrapper');
@@ -585,63 +603,81 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Create Escrow Form (Client Deposit & Contract Receipt Confirmation)
-  document.getElementById('create-escrow-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('create-escrow-submit-btn');
-    btn.classList.add('btn-loading');
-    btn.disabled = true;
+  const createEscrowForm = document.getElementById('create-escrow-form');
+  if (createEscrowForm) {
+    createEscrowForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('create-escrow-submit-btn');
+      if (btn) {
+        btn.classList.add('btn-loading');
+        btn.disabled = true;
+      }
 
-    const amount = parseFloat(document.getElementById('escrow-amount').value);
+      const amount = parseFloat(document.getElementById('escrow-amount').value);
 
-    try {
-      const res = await API.createEscrow({
-        client: state.currentWallet,
-        contractor: assignmentSelect.value === 'assigned' ? document.getElementById('escrow-contractor').value : '0x0000000000000000000000000000000000000000',
-        title: document.getElementById('escrow-title').value,
-        description: document.getElementById('escrow-desc').value,
-        category: document.getElementById('escrow-category').value,
-        requirements: document.getElementById('escrow-requirements').value,
-        criteria: document.getElementById('escrow-criteria').value,
-        amount: amount,
-        quality_threshold: 80
-      });
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      window.closeModals();
-      showToast(`Payment Receipt Confirmed! ${amount} GEN received and locked in GenLayer Escrow Vault #${res.escrow_id}.`, 'success');
-      loadEscrows();
-    } catch (err) {
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      showToast('Failed to create escrow: ' + err.message, 'danger');
-    }
-  });
+      try {
+        const res = await API.createEscrow({
+          client: state.currentWallet,
+          contractor: assignmentSelect && assignmentSelect.value === 'assigned' ? document.getElementById('escrow-contractor').value : '0x0000000000000000000000000000000000000000',
+          title: document.getElementById('escrow-title').value,
+          description: document.getElementById('escrow-desc').value,
+          category: document.getElementById('escrow-category').value,
+          requirements: document.getElementById('escrow-requirements').value,
+          criteria: document.getElementById('escrow-criteria').value,
+          amount: amount,
+          quality_threshold: 80
+        });
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        window.closeModals();
+        showToast(`Payment Receipt Confirmed! ${amount} GEN received and locked in GenLayer Escrow Vault #${res.escrow_id}.`, 'success');
+        loadEscrows();
+      } catch (err) {
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        showToast('Failed to create escrow: ' + err.message, 'danger');
+      }
+    });
+  }
 
   // Submit Deliverable Form
-  document.getElementById('submit-deliverable-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('submit-deliv-btn');
-    btn.classList.add('btn-loading');
-    btn.disabled = true;
+  const submitDelivForm = document.getElementById('submit-deliverable-form');
+  if (submitDelivForm) {
+    submitDelivForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-deliv-btn');
+      if (btn) {
+        btn.classList.add('btn-loading');
+        btn.disabled = true;
+      }
 
-    try {
-      await API.submitDeliverable({
-        escrow_id: activeEscrowId,
-        sender: state.currentWallet,
-        deliverable_url: document.getElementById('deliv-url').value,
-        deliverable_notes: document.getElementById('deliv-notes').value
-      });
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      window.closeModals();
-      showToast('Deliverable submitted to Intelligent Contract!', 'success');
-      loadEscrows();
-    } catch (err) {
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      showToast('Failed to submit: ' + err.message, 'danger');
-    }
-  });
+      try {
+        await API.submitDeliverable({
+          escrow_id: activeEscrowId,
+          sender: state.currentWallet,
+          deliverable_url: document.getElementById('deliv-url').value,
+          deliverable_notes: document.getElementById('deliv-notes').value
+        });
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        window.closeModals();
+        showToast('Deliverable submitted to Intelligent Contract!', 'success');
+        loadEscrows();
+      } catch (err) {
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        showToast('Failed to submit: ' + err.message, 'danger');
+      }
+    });
+  }
 
   // AI Arbitration Visualizer Step Sequence
   window.triggerAIArbitration = async (escrowId) => {
@@ -656,50 +692,45 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('step-4'),
       document.getElementById('step-5')
     ];
-    steps.forEach(s => s.className = 'step-row');
+    steps.forEach(s => { if (s) s.className = 'step-row'; });
 
     const statusText = document.getElementById('arbitration-status-text');
 
-    steps[0].classList.add('active');
-    statusText.textContent = 'Selecting GenLayer Validator Committee (5 Nodes Staked)...';
+    if (steps[0]) steps[0].classList.add('active');
+    if (statusText) statusText.textContent = 'Selecting GenLayer Validator Committee (5 Nodes Staked)...';
 
     setTimeout(() => {
-      steps[0].classList.remove('active');
-      steps[0].classList.add('completed');
-      steps[1].classList.add('active');
-      statusText.textContent = 'Executing gl.nondet.web.render() on deliverable snapshot...';
+      if (steps[0]) { steps[0].classList.remove('active'); steps[0].classList.add('completed'); }
+      if (steps[1]) steps[1].classList.add('active');
+      if (statusText) statusText.textContent = 'Executing gl.nondet.web.render() on deliverable snapshot...';
     }, 1000);
 
     setTimeout(() => {
-      steps[1].classList.remove('active');
-      steps[1].classList.add('completed');
-      steps[2].classList.add('active');
-      statusText.textContent = 'GenVM LLM evaluating criteria and scoring quality...';
+      if (steps[1]) { steps[1].classList.remove('active'); steps[1].classList.add('completed'); }
+      if (steps[2]) steps[2].classList.add('active');
+      if (statusText) statusText.textContent = 'GenVM LLM evaluating criteria and scoring quality...';
     }, 2000);
 
     setTimeout(() => {
-      steps[2].classList.remove('active');
-      steps[2].classList.add('completed');
-      steps[3].classList.add('active');
-      statusText.textContent = 'Verifying Equivalence Principle & aggregating signatures...';
+      if (steps[2]) { steps[2].classList.remove('active'); steps[2].classList.add('completed'); }
+      if (steps[3]) steps[3].classList.add('active');
+      if (statusText) statusText.textContent = 'Verifying Equivalence Principle & aggregating signatures...';
     }, 3000);
 
     setTimeout(async () => {
       try {
         const res = await API.resolveMilestone(escrowId);
-        steps[3].classList.remove('active');
-        steps[3].classList.add('completed');
-        steps[4].classList.add('active');
-        steps[4].classList.add('completed');
+        if (steps[3]) { steps[3].classList.remove('active'); steps[3].classList.add('completed'); }
+        if (steps[4]) { steps[4].classList.add('active'); steps[4].classList.add('completed'); }
 
-        statusText.textContent = `Consensus Proven! Task Verified (Score: 92/100). Opening Payout Destination Address Prompt...`;
+        if (statusText) statusText.textContent = `Consensus Proven! Task Verified (Score: 92/100). Opening Payout Destination Address Prompt...`;
         loadEscrows();
         setTimeout(() => {
           window.closeModals();
           window.promptPayoutAddressModal(escrowId);
         }, 1500);
       } catch (err) {
-        statusText.textContent = `Execution error: ${err.message}`;
+        if (statusText) statusText.textContent = `Execution error: ${err.message}`;
       }
     }, 4000);
   };
@@ -719,32 +750,41 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Submit Developer Payout Address Form
-  document.getElementById('payout-address-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('confirm-payout-btn');
-    const destAddr = document.getElementById('payout-destination-address').value.trim();
+  const payoutAddressForm = document.getElementById('payout-address-form');
+  if (payoutAddressForm) {
+    payoutAddressForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('confirm-payout-btn');
+      const destAddr = document.getElementById('payout-destination-address').value.trim();
 
-    if (!destAddr) {
-      showToast('Please enter a valid payout destination address', 'danger');
-      return;
-    }
+      if (!destAddr) {
+        showToast('Please enter a valid payout destination address', 'danger');
+        return;
+      }
 
-    btn.classList.add('btn-loading');
-    btn.disabled = true;
+      if (btn) {
+        btn.classList.add('btn-loading');
+        btn.disabled = true;
+      }
 
-    try {
-      const res = await API.releasePayout(state.activePayoutEscrowId, destAddr);
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      window.closeModals();
-      showToast(`Payment disbursed! Escrow funds sent to address ${destAddr}`, 'success');
-      loadEscrows();
-    } catch (err) {
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      showToast('Payout error: ' + err.message, 'danger');
-    }
-  });
+      try {
+        const res = await API.releasePayout(state.activePayoutEscrowId, destAddr);
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        window.closeModals();
+        showToast(`Payment disbursed! Escrow funds sent to address ${destAddr}`, 'success');
+        loadEscrows();
+      } catch (err) {
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        showToast('Payout error: ' + err.message, 'danger');
+      }
+    });
+  }
 
   // View Resolution Report
   window.viewResolutionReport = (escrowId) => {
@@ -780,30 +820,39 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('stake-modal').classList.add('active');
   };
 
-  document.getElementById('stake-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('stake-submit-btn');
-    btn.classList.add('btn-loading');
-    btn.disabled = true;
+  const stakeForm = document.getElementById('stake-form');
+  if (stakeForm) {
+    stakeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('stake-submit-btn');
+      if (btn) {
+        btn.classList.add('btn-loading');
+        btn.disabled = true;
+      }
 
-    try {
-      await API.placeBet({
-        market_id: activeMarketId,
-        sender: state.currentWallet,
-        side: activeMarketSide,
-        amount: parseFloat(document.getElementById('stake-amount').value)
-      });
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      window.closeModals();
-      showToast(`Staked on ${activeMarketSide}!`, 'success');
-      loadMarkets();
-    } catch (err) {
-      btn.classList.remove('btn-loading');
-      btn.disabled = false;
-      showToast('Staking error: ' + err.message, 'danger');
-    }
-  });
+      try {
+        await API.placeBet({
+          market_id: activeMarketId,
+          sender: state.currentWallet,
+          side: activeMarketSide,
+          amount: parseFloat(document.getElementById('stake-amount').value)
+        });
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        window.closeModals();
+        showToast(`Staked on ${activeMarketSide}!`, 'success');
+        loadMarkets();
+      } catch (err) {
+        if (btn) {
+          btn.classList.remove('btn-loading');
+          btn.disabled = false;
+        }
+        showToast('Staking error: ' + err.message, 'danger');
+      }
+    });
+  }
 
   window.resolveTruthForgeMarket = async (marketId) => {
     showToast('Executing multi-source web crawl & GenLayer validator consensus...', 'info');
