@@ -27,6 +27,15 @@
           </div>
         </div>
 
+        <!-- Connected Wallet Quick Resume Banner (Visible when wallet is connected) -->
+        <div id="wallet-auth-resume-box" style="display:none;background:var(--bg-surface-elevated);border:1px solid var(--border-glow);border-radius:var(--radius-md);padding:1rem;margin-bottom:1.25rem;text-align:center;">
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">Connected Web3 Wallet:</div>
+          <div style="font-family:var(--font-mono);font-size:0.9rem;font-weight:700;color:var(--primary);margin-bottom:8px;" id="resume-wallet-address">0x0000...0000</div>
+          <button class="action-btn btn-sm" id="continue-with-wallet-btn" style="width:100%;">
+            ⚡ Continue with Connected Wallet
+          </button>
+        </div>
+
         <div class="auth-tabs">
           <button class="auth-tab-btn active" id="auth-tab-login" onclick="window.switchAuthTab('login')">Log In</button>
           <button class="auth-tab-btn" id="auth-tab-signup" onclick="window.switchAuthTab('signup')">Create Account</button>
@@ -357,6 +366,27 @@
       <button class="action-btn" id="confirm-deposit-sent-btn" style="width:100%;">
         Confirm On-Chain Deposit
       </button>
+    </div>
+  </div>
+
+  <!-- MODAL 5: CONFIRM APPLICATION LOGOUT MODAL -->
+  <div class="modal-overlay" id="logout-confirm-modal">
+    <div class="modal-card" style="max-width:440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Log out of Intellex?</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('logout-confirm-modal').classList.remove('active')">&times;</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:0.9rem;margin-bottom:1.25rem;">
+        You will be logged out of your Intellex application account. Your Web3 wallet will <strong style="color:var(--primary);">remain connected</strong>.
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="secondary-btn" onclick="document.getElementById('logout-confirm-modal').classList.remove('active')">
+          Cancel
+        </button>
+        <button class="action-btn" id="confirm-logout-btn" style="background:var(--danger);border-color:transparent;color:#fff;">
+          Log Out
+        </button>
+      </div>
     </div>
   </div>
 

@@ -306,6 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const walletBtn = document.getElementById('connect-wallet-btn');
     const popoverFullAddr = document.getElementById('popover-full-address');
     const popoverRoleVal = document.getElementById('popover-role-value');
+    const resumeBox = document.getElementById('wallet-auth-resume-box');
+    const resumeAddrText = document.getElementById('resume-wallet-address');
 
     if (state.connectedWallet && state.connectedWallet.length > 0) {
       const shortAddr = `${state.connectedWallet.slice(0, 6)}...${state.connectedWallet.slice(-4)}`;
@@ -313,6 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (walletBtnText) walletBtnText.textContent = shortAddr;
       if (popoverFullAddr) popoverFullAddr.textContent = shortAddr;
       if (popoverRoleVal) popoverRoleVal.textContent = (state.currentRole || 'Client').toUpperCase();
+      if (resumeAddrText) resumeAddrText.textContent = `${state.connectedWallet.slice(0,6)}...${state.connectedWallet.slice(-4)}`;
+      if (resumeBox) resumeBox.style.display = (state.currentScreen === 'login' && !localStorage.getItem('intellex_logged_in')) ? 'block' : 'none';
 
       if (walletBtn) {
         walletBtn.className = 'connected-wallet-pill';
@@ -325,6 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       if (walletBtnIcon) walletBtnIcon.textContent = '⚡';
       if (walletBtnText) walletBtnText.textContent = 'Connect Wallet';
+      if (resumeBox) resumeBox.style.display = 'none';
 
       if (walletBtn) {
         walletBtn.className = 'action-btn btn-sm';
@@ -409,10 +414,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 4000);
   }
 
-  // LOGOUT BUTTON HANDLER
-  const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
+  // LOGOUT PROMPT & HANDLER
+  window.promptApplicationLogout = () => {
+    const modal = document.getElementById('logout-confirm-modal');
+    if (modal) modal.classList.add('active');
+  };
+
+  window.handleApplicationLogout = () => {
+    state.authStatus = 'LOGGING_OUT';
+    const modal = document.getElementById('logout-confirm-modal');
+    const confirmBtn = document.getElementById('confirm-logout-btn');
+
+    if (confirmBtn) {
+      confirmBtn.classList.add('btn-loading');
+      confirmBtn.disabled = true;
+    }
+
+    setTimeout(() => {
+      if (confirmBtn) {
+        confirmBtn.classList.remove('btn-loading');
+        confirmBtn.disabled = false;
+      }
+      if (modal) modal.classList.remove('active');
+
+      // Clear session keys only (preserve connected wallet and theme)
       localStorage.removeItem('intellex_logged_in');
       localStorage.removeItem('intellex_username');
       localStorage.removeItem('intellex_role');
@@ -421,11 +446,75 @@ document.addEventListener('DOMContentLoaded', () => {
       state.currentUsername = '';
       state.currentEmail = '';
       state.currentRole = '';
+      state.authStatus = 'LOGGED_OUT';
 
-      showToast('Logged out successfully', 'info');
+      showToast('Logged out of Intellex account. Web3 wallet remains connected.', 'info');
+      updateRoleUI();
+      window.updateWalletUI();
       showScreen('login');
+    }, 400);
+  };
+
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', window.promptApplicationLogout);
+  }
+
+  const confirmLogoutBtn = document.getElementById('confirm-logout-btn');
+  if (confirmLogoutBtn) {
+    confirmLogoutBtn.addEventListener('click', window.handleApplicationLogout);
+  }
+
+  // CONTINUE WITH CONNECTED WALLET HANDLER
+  const continueWithWalletBtn = document.getElementById('continue-with-wallet-btn');
+  if (continueWithWalletBtn) {
+    continueWithWalletBtn.addEventListener('click', () => {
+      if (!state.connectedWallet) {
+        window.openConnectWalletModal();
+        return;
+      }
+      state.authStatus = 'AUTHENTICATING';
+      continueWithWalletBtn.classList.add('btn-loading');
+      continueWithWalletBtn.disabled = true;
+
+      setTimeout(() => {
+        continueWithWalletBtn.classList.remove('btn-loading');
+        continueWithWalletBtn.disabled = false;
+
+        const addr = state.connectedWallet;
+        const short = `${addr.slice(0,6)}...${addr.slice(-4)}`;
+        state.currentUsername = short;
+        state.currentEmail = `${addr.toLowerCase()}@wallet.io`;
+        state.currentRole = localStorage.getItem('intellex_role') || 'client';
+        state.authStatus = 'AUTHENTICATED_AGAIN';
+
+        localStorage.setItem('intellex_logged_in', 'true');
+        localStorage.setItem('intellex_username', state.currentUsername);
+        localStorage.setItem('intellex_email', state.currentEmail);
+        localStorage.setItem('intellex_role', state.currentRole);
+
+        showToast(`Authenticated as ${short}`, 'success');
+        updateRoleUI();
+        window.updateWalletUI();
+        showScreen('dashboard');
+        loadEscrows();
+      }, 400);
     });
   }
+
+  // MULTI-TAB SESSION SYNC LISTENER
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'intellex_logged_in' && !e.newValue) {
+      state.authStatus = 'LOGGED_OUT';
+      state.currentUsername = '';
+      state.currentEmail = '';
+      state.currentRole = '';
+      showToast('Application session ended in another browser tab.', 'info');
+      updateRoleUI();
+      window.updateWalletUI();
+      showScreen('login');
+    }
+  });
 
   // SCREEN 1: AUTH TAB SWITCHER
   window.switchAuthTab = (tab) => {
