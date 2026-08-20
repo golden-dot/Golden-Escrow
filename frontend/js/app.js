@@ -227,61 +227,104 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.classList.add('active');
   };
 
+  // WALLET POP-OVER TOGGLE
+  window.toggleWalletPopover = () => {
+    if (state.connectedWallet && state.connectedWallet.length > 0) {
+      const popover = document.getElementById('wallet-popover-menu');
+      if (popover) {
+        popover.classList.toggle('active');
+      }
+    } else {
+      window.openConnectWalletModal();
+    }
+  };
+
+  // Close popover when clicking outside
+  document.addEventListener('click', (e) => {
+    const popover = document.getElementById('wallet-popover-menu');
+    const wrapper = document.querySelector('.wallet-control-wrapper');
+    if (popover && popover.classList.contains('active')) {
+      if (wrapper && !wrapper.contains(e.target)) {
+        popover.classList.remove('active');
+      }
+    }
+  });
+
+  window.copyConnectedWalletAddress = () => {
+    if (state.connectedWallet) {
+      window.copyContractAddress(state.connectedWallet);
+    }
+  };
+
   window.connectSelectedWallet = async (provider, walletName) => {
     const targetProvider = provider || window.ethereum;
     if (!targetProvider) {
       showToast(`Extension not detected. Please install ${walletName || 'a Web3 Wallet extension'}.`, 'danger');
+      state.walletState = 'CONNECTION_ERROR';
       return;
     }
 
     try {
+      state.walletState = 'CONNECTING';
       showToast(`Requesting account access from ${walletName}...`, 'info');
       const accounts = await targetProvider.request({ method: 'eth_requestAccounts' });
 
       if (accounts && accounts.length > 0) {
         const address = accounts[0];
         state.connectedWallet = address;
+        state.walletState = 'CONNECTED';
         localStorage.setItem('intellex_connected_wallet', address);
 
         window.updateWalletUI();
         window.closeModals();
+        loadEscrows();
         showToast(`Connected ${walletName}: ${address.slice(0,6)}...${address.slice(-4)}`, 'success');
       }
     } catch (err) {
+      state.walletState = 'CONNECTION_ERROR';
       showToast(`Wallet connection error: ${err.message || 'User rejected request'}`, 'danger');
     }
   };
 
   window.disconnectWallet = () => {
+    state.walletState = 'DISCONNECTING';
     state.connectedWallet = '';
     localStorage.removeItem('intellex_connected_wallet');
+
+    const popover = document.getElementById('wallet-popover-menu');
+    if (popover) popover.classList.remove('active');
+
+    state.walletState = 'DISCONNECTED';
     window.updateWalletUI();
-    showToast('Wallet disconnected', 'info');
+    loadEscrows();
+    showToast('Wallet session disconnected', 'info');
   };
 
   window.updateWalletUI = () => {
     const walletBtnIcon = document.getElementById('wallet-btn-icon');
     const walletBtnText = document.getElementById('wallet-btn-text');
     const walletBtn = document.getElementById('connect-wallet-btn');
-    const connectedPanel = document.getElementById('connected-wallet-panel');
-    const connectedAddrEl = document.getElementById('connected-wallet-address');
+    const popoverFullAddr = document.getElementById('popover-full-address');
+    const popoverRoleVal = document.getElementById('popover-role-value');
 
     if (state.connectedWallet && state.connectedWallet.length > 0) {
       const shortAddr = `${state.connectedWallet.slice(0, 6)}...${state.connectedWallet.slice(-4)}`;
       if (walletBtnIcon) walletBtnIcon.innerHTML = `<span class="pulse-dot"></span>`;
       if (walletBtnText) walletBtnText.textContent = shortAddr;
-      if (connectedAddrEl) connectedAddrEl.textContent = state.connectedWallet;
-      if (connectedPanel) connectedPanel.style.display = 'block';
+      if (popoverFullAddr) popoverFullAddr.textContent = shortAddr;
+      if (popoverRoleVal) popoverRoleVal.textContent = (state.currentRole || 'Client').toUpperCase();
 
       if (walletBtn) {
         walletBtn.className = 'connected-wallet-pill';
-        walletBtn.title = `Connected Address: ${state.connectedWallet}\n(Click to view/switch)`;
-        walletBtn.onclick = () => window.openConnectWalletModal();
+        walletBtn.title = `Connected Address: ${state.connectedWallet}\n(Click for wallet details & actions)`;
+        walletBtn.onclick = (e) => {
+          e.stopPropagation();
+          window.toggleWalletPopover();
+        };
       }
     } else {
       if (walletBtnIcon) walletBtnIcon.textContent = '⚡';
       if (walletBtnText) walletBtnText.textContent = 'Connect Wallet';
-      if (connectedPanel) connectedPanel.style.display = 'none';
 
       if (walletBtn) {
         walletBtn.className = 'action-btn btn-sm';
@@ -293,6 +336,31 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   };
+
+  // EIP-1193 ACCOUNT & NETWORK CHANGE LISTENERS
+  if (window.ethereum && window.ethereum.on) {
+    window.ethereum.on('accountsChanged', (accounts) => {
+      if (!accounts || accounts.length === 0) {
+        window.disconnectWallet();
+      } else {
+        const newAddr = accounts[0];
+        if (newAddr.toLowerCase() !== (state.connectedWallet || '').toLowerCase()) {
+          state.walletState = 'ACCOUNT_CHANGED';
+          state.connectedWallet = newAddr;
+          localStorage.setItem('intellex_connected_wallet', newAddr);
+          state.walletState = 'CONNECTED';
+          window.updateWalletUI();
+          loadEscrows();
+          showToast(`Account changed to ${newAddr.slice(0,6)}...${newAddr.slice(-4)}`, 'info');
+        }
+      }
+    });
+
+    window.ethereum.on('chainChanged', (_chainId) => {
+      showToast('Network change detected. Reloading chain state...', 'info');
+      loadEscrows();
+    });
+  }
 
   // 1-Click Contract Address Copy Helper
   window.copyContractAddress = (address) => {

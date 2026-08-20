@@ -122,10 +122,43 @@
       </nav>
 
       <div class="nav-wallet">
-        <button class="action-btn btn-sm" id="connect-wallet-btn" onclick="window.openConnectWalletModal()">
-          <span id="wallet-btn-icon">⚡</span>
-          <span id="wallet-btn-text">Connect Wallet</span>
-        </button>
+        <!-- WALLET CONTROL WRAPPER WITH POPOVER MENU -->
+        <div class="wallet-control-wrapper">
+          <button class="action-btn btn-sm" id="connect-wallet-btn" onclick="window.toggleWalletPopover()">
+            <span id="wallet-btn-icon">⚡</span>
+            <span id="wallet-btn-text">Connect Wallet</span>
+          </button>
+
+          <!-- CONNECTED WALLET POPOVER MENU -->
+          <div class="wallet-popover-menu" id="wallet-popover-menu">
+            <div class="popover-header">
+              <h4>Connected Wallet Details</h4>
+              <span class="status-pill status-APPROVED" style="font-size:0.68rem;padding:2px 8px;">🟢 Active</span>
+            </div>
+            <div class="popover-address-box">
+              <span class="popover-address-text" id="popover-full-address">0x0000...0000</span>
+              <button class="secondary-btn btn-sm" style="padding:2px 8px;font-size:0.7rem;" onclick="window.copyConnectedWalletAddress()">
+                📋 Copy
+              </button>
+            </div>
+            <div class="popover-meta-row">
+              <span class="popover-meta-label">Network:</span>
+              <span class="popover-meta-value" style="color:var(--primary);">GenLayer Bradbury</span>
+            </div>
+            <div class="popover-meta-row">
+              <span class="popover-meta-label">Escrow Role:</span>
+              <span class="popover-meta-value" id="popover-role-value">Client</span>
+            </div>
+            <div class="popover-actions-grid">
+              <button class="secondary-btn btn-sm" style="font-size:0.75rem;" onclick="window.openConnectWalletModal()">
+                🔄 Switch Wallet
+              </button>
+              <button class="secondary-btn btn-sm" style="font-size:0.75rem;border-color:var(--danger);color:var(--danger);" onclick="window.disconnectWallet()">
+                ❌ Disconnect
+              </button>
+            </div>
+          </div>
+        </div>
 
         <div class="user-profile-badge" id="nav-profile-badge">
           <div>
@@ -220,19 +253,11 @@
         <h3 class="modal-title">Connect Web3 Wallet</h3>
         <button class="modal-close-btn" onclick="window.closeConnectWalletModal()">&times;</button>
       </div>
-      <p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:0.9rem;">
-        Select your installed Web3 Wallet extension to connect to GenLayer Bradbury.
+      <p style="color:var(--text-muted);margin-bottom:1.25rem;font-size:0.88rem;">
+        Choose a Web3 provider to connect to GenLayer Bradbury.
       </p>
-      <div style="display:grid;gap:10px;">
-        <button class="secondary-btn" style="justify-content:flex-start;" onclick="window.connectWeb3Wallet('metamask')">
-          🦊 MetaMask / Web3 Extension
-        </button>
-        <button class="secondary-btn" style="justify-content:flex-start;" onclick="window.connectWeb3Wallet('rabby')">
-          🐰 Rabby Wallet
-        </button>
-        <button class="secondary-btn" style="justify-content:flex-start;" onclick="window.connectWeb3Wallet('coinbase')">
-          🔵 Coinbase Wallet
-        </button>
+      <div id="detected-wallets-list">
+        <!-- Dynamically injected wallet cards -->
       </div>
     </div>
   </div>

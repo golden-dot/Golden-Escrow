@@ -938,6 +938,187 @@ textarea.form-control {
 .toast.info { border-color: var(--primary); }
 
 /* =========================================================
+   CONNECTED WALLET CONTROL & POPOVER MENU SYSTEM
+   ========================================================= */
+.wallet-control-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.connected-wallet-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-md);
+  padding: 6px 14px;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+}
+
+.connected-wallet-pill:hover {
+  border-color: var(--primary);
+  background: var(--bg-surface-hover);
+  box-shadow: var(--shadow-glow);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  display: inline-block;
+  animation: pulseDot 2s infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+
+.wallet-popover-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(59, 130, 246, 0.2);
+  z-index: 1000;
+}
+
+.wallet-popover-menu.active {
+  display: block;
+  animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popoverFadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.popover-header h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.popover-address-box {
+  background: var(--bg-canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.popover-address-text {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.popover-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  margin-bottom: 0.5rem;
+}
+
+.popover-meta-label {
+  color: var(--text-muted);
+}
+
+.popover-meta-value {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.popover-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.modern-wallet-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-bottom: 8px;
+}
+
+.modern-wallet-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+}
+
+.modern-wallet-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modern-wallet-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modern-wallet-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.modern-wallet-badge.installed {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+}
+
+.modern-wallet-badge.install-link {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+  text-decoration: none;
+}
+
+/* =========================================================
    ACCESSIBILITY & PREFERS-REDUCED-MOTION
    ========================================================= */
 @media (prefers-reduced-motion: reduce) {
